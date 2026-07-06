@@ -313,6 +313,14 @@
     playTone(196, t + 0.14, 0.32, "sine", 0.1);
   }
 
+  function playClickSound(k){
+    if(isMuted()) return;
+    var ctx = getCtx();
+    var t = ctx.currentTime;
+    var freq = k === "back" ? 340 : 660;
+    playTone(freq, t, 0.08, "square", 0.06);
+  }
+
   function playFanfare(){
     if(isMuted()) return;
     var ctx = getCtx();
@@ -534,11 +542,13 @@
   function handleKey(k){
     if(quiz.locked) return;
     if(k === "back"){
+      playClickSound(k);
       quiz.inputStr = quiz.inputStr.slice(0, -1);
       updateAnswerDisplay();
     } else if(k === "ok"){
       submitAnswer();
     } else {
+      playClickSound(k);
       if(quiz.inputStr.length < 3) quiz.inputStr += k;
       updateAnswerDisplay();
     }
