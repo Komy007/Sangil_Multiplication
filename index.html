@@ -96,6 +96,16 @@
     display:flex; justify-content:space-between; font-size:.85rem;
     padding:6px 2px; border-bottom:1px solid rgba(255,255,255,.08);
   }
+
+  #screen-tetris{display:none;}
+  .tetrisCanvasWrap{position:relative; display:flex; justify-content:center;}
+  #tetrisCanvas{background:#0c0e2e; border-radius:12px; touch-action:none; max-width:100%;}
+  .tetrisOverOverlay{
+    display:none; position:absolute; inset:0; background:rgba(11,13,42,.9);
+    border-radius:12px; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:16px;
+  }
+  .tetrisControls{display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:16px;}
+  .tetrisControls .key{padding:16px 0; font-size:1.4rem;}
   .quizTop{display:flex; justify-content:space-between; font-size:.85rem; opacity:.85; margin-bottom:6px;}
   .questionCard{
     background:linear-gradient(160deg, var(--card), var(--card2));
@@ -253,6 +263,7 @@
       <div class="sectionTitle" id="missedTitle" style="text-align:center;">Let's review these:</div>
       <div class="missedGrid" id="missedGrid"></div>
     </div>
+    <button class="bigBtn" id="tetrisBonusBtn" style="display:none;">🎮 Play Tetris Bonus (2 min)!</button>
     <button class="secondaryBtn" id="practiceMissedFromResult" style="display:none;">Practice Missed Ones 🔁</button>
     <button class="bigBtn" id="newTestBtn">New Test 🚀</button>
   </div>
@@ -264,6 +275,33 @@
       <div style="width:44px;"></div>
     </div>
     <div id="adminList"></div>
+  </div>
+
+  <div id="screen-tetris">
+    <div class="topbar">
+      <div style="width:44px;"></div>
+      <h1>🎮 Bonus Tetris!</h1>
+      <div style="width:44px;"></div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div id="tetrisTimer" style="font-size:1.3rem; font-weight:800;">⏱ 2:00</div>
+      <div id="tetrisScore" style="font-size:1rem; opacity:.85; margin:4px 0 10px;">Score: 0</div>
+      <div class="tetrisCanvasWrap">
+        <canvas id="tetrisCanvas" width="240" height="480"></canvas>
+        <div class="tetrisOverOverlay" id="tetrisOverOverlay">
+          <div style="font-size:1.6rem; font-weight:900;">⏰ Time's Up!</div>
+          <div id="tetrisFinalScore" style="margin:10px 0; font-size:1.1rem;"></div>
+          <button class="bigBtn" id="tetrisBackBtn" style="width:80%;">Back to Home 🏠</button>
+        </div>
+      </div>
+    </div>
+    <div class="tetrisControls">
+      <button class="key" id="tLeft">⬅️</button>
+      <button class="key" id="tRotate">🔄</button>
+      <button class="key" id="tRight">➡️</button>
+      <button class="key" id="tDown">⬇️</button>
+      <button class="key confirm" id="tDrop" style="grid-column:span 2;">⏬ Drop</button>
+    </div>
   </div>
 
 </div>
@@ -603,6 +641,213 @@
     document.getElementById("screen-quiz").style.display = name === "quiz" ? "block" : "none";
     document.getElementById("screen-result").style.display = name === "result" ? "block" : "none";
     document.getElementById("screen-admin").style.display = name === "admin" ? "block" : "none";
+    document.getElementById("screen-tetris").style.display = name === "tetris" ? "block" : "none";
+  }
+
+  // ---------- Tetris bonus game ----------
+  var T_COLS = 10, T_ROWS = 20, T_BLOCK = 24;
+  var TETROMINOES = {
+    I:{matrix:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], color:"#00d4ff"},
+    O:{matrix:[[1,1],[1,1]], color:"#ffd166"},
+    T:{matrix:[[0,1,0],[1,1,1],[0,0,0]], color:"#b388ff"},
+    S:{matrix:[[0,1,1],[1,1,0],[0,0,0]], color:"#3ddc84"},
+    Z:{matrix:[[1,1,0],[0,1,1],[0,0,0]], color:"#ff5c7a"},
+    J:{matrix:[[1,0,0],[1,1,1],[0,0,0]], color:"#5c7cff"},
+    L:{matrix:[[0,0,1],[1,1,1],[0,0,0]], color:"#ff9d5c"}
+  };
+  var tetris = null;
+
+  function tMakeEmptyBoard(){
+    var b = [];
+    for(var y=0;y<T_ROWS;y++){ b.push(new Array(T_COLS).fill(0)); }
+    return b;
+  }
+
+  function tNewPiece(){
+    var keys = Object.keys(TETROMINOES);
+    var type = keys[Math.floor(Math.random()*keys.length)];
+    var def = TETROMINOES[type];
+    var matrix = def.matrix.map(function(row){ return row.slice(); });
+    var w = matrix[0].length;
+    return {matrix:matrix, color:def.color, x:Math.floor((T_COLS - w)/2), y:0};
+  }
+
+  function tRotateMatrix(m){
+    var n = m.length;
+    var res = [];
+    for(var i=0;i<n;i++){ res.push(new Array(n).fill(0)); }
+    for(var y=0;y<n;y++){
+      for(var x=0;x<n;x++){ res[x][n-1-y] = m[y][x]; }
+    }
+    return res;
+  }
+
+  function tCollides(matrix, offX, offY, board){
+    for(var y=0;y<matrix.length;y++){
+      for(var x=0;x<matrix[y].length;x++){
+        if(!matrix[y][x]) continue;
+        var bx = offX+x, by = offY+y;
+        if(bx<0 || bx>=T_COLS || by>=T_ROWS) return true;
+        if(by>=0 && board[by][bx]) return true;
+      }
+    }
+    return false;
+  }
+
+  function tDrawBlock(ctx, x, y, color){
+    ctx.fillStyle = color;
+    ctx.fillRect(x*T_BLOCK+1, y*T_BLOCK+1, T_BLOCK-2, T_BLOCK-2);
+  }
+
+  function tDraw(){
+    var canvas = document.getElementById("tetrisCanvas");
+    var ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for(var y=0;y<T_ROWS;y++){
+      for(var x=0;x<T_COLS;x++){
+        if(tetris.board[y][x]) tDrawBlock(ctx, x, y, tetris.board[y][x]);
+      }
+    }
+    var m = tetris.current.matrix;
+    for(var py=0;py<m.length;py++){
+      for(var px=0;px<m[py].length;px++){
+        if(m[py][px]){
+          var by = tetris.current.y+py;
+          if(by>=0) tDrawBlock(ctx, tetris.current.x+px, by, tetris.current.color);
+        }
+      }
+    }
+  }
+
+  function tPlayTone(freq, dur){
+    if(isMuted()) return;
+    var ctx = getCtx();
+    playTone(freq, ctx.currentTime, dur, "square", 0.05);
+  }
+
+  function tClearLines(){
+    var cleared = 0;
+    for(var y=T_ROWS-1; y>=0; y--){
+      if(tetris.board[y].every(function(c){ return !!c; })){
+        tetris.board.splice(y, 1);
+        tetris.board.unshift(new Array(T_COLS).fill(0));
+        cleared++;
+        y++;
+      }
+    }
+    if(cleared>0){
+      tetris.score += [0,100,300,500,800][cleared] || cleared*200;
+      document.getElementById("tetrisScore").textContent = "Score: " + tetris.score;
+      tPlayTone(880, 0.15);
+    }
+  }
+
+  function tSpawnNext(){
+    tetris.current = tNewPiece();
+    if(tCollides(tetris.current.matrix, tetris.current.x, tetris.current.y, tetris.board)){
+      tetris.board = tMakeEmptyBoard();
+    }
+  }
+
+  function tLockPiece(){
+    var m = tetris.current.matrix;
+    for(var y=0;y<m.length;y++){
+      for(var x=0;x<m[y].length;x++){
+        if(m[y][x]){
+          var by = tetris.current.y+y, bx = tetris.current.x+x;
+          if(by>=0 && by<T_ROWS) tetris.board[by][bx] = tetris.current.color;
+        }
+      }
+    }
+    tClearLines();
+    tSpawnNext();
+  }
+
+  function tTryMove(dx, dy){
+    if(!tetris || !tetris.running) return;
+    var nx = tetris.current.x+dx, ny = tetris.current.y+dy;
+    if(!tCollides(tetris.current.matrix, nx, ny, tetris.board)){
+      tetris.current.x = nx;
+      tetris.current.y = ny;
+      if(dx !== 0) tPlayTone(440, 0.05);
+    } else if(dy>0){
+      tLockPiece();
+    }
+    tDraw();
+  }
+
+  function tRotate(){
+    if(!tetris || !tetris.running) return;
+    var rotated = tRotateMatrix(tetris.current.matrix);
+    var kicks = [0, -1, 1, -2, 2];
+    for(var i=0;i<kicks.length;i++){
+      if(!tCollides(rotated, tetris.current.x+kicks[i], tetris.current.y, tetris.board)){
+        tetris.current.x += kicks[i];
+        tetris.current.matrix = rotated;
+        tPlayTone(660, 0.06);
+        break;
+      }
+    }
+    tDraw();
+  }
+
+  function tHardDrop(){
+    if(!tetris || !tetris.running) return;
+    while(!tCollides(tetris.current.matrix, tetris.current.x, tetris.current.y+1, tetris.board)){
+      tetris.current.y++;
+    }
+    tLockPiece();
+    tDraw();
+  }
+
+  function tTick(){
+    if(!tetris || !tetris.running) return;
+    var now = Date.now();
+    if(now - tetris.lastDrop > tetris.dropInterval){
+      tTryMove(0, 1);
+      tetris.lastDrop = now;
+    }
+    tDraw();
+    tetris.rafHandle = requestAnimationFrame(tTick);
+  }
+
+  function tUpdateTimerDisplay(){
+    var m = Math.floor(tetris.timerSec/60), sec = tetris.timerSec%60;
+    document.getElementById("tetrisTimer").textContent = "⏱ " + m + ":" + (sec<10 ? "0" : "") + sec;
+  }
+
+  function endTetris(){
+    if(!tetris) return;
+    tetris.running = false;
+    clearInterval(tetris.timerHandle);
+    cancelAnimationFrame(tetris.rafHandle);
+    document.getElementById("tetrisFinalScore").textContent = "Score: " + tetris.score;
+    document.getElementById("tetrisOverOverlay").style.display = "flex";
+    speak("Time's up! Great playing!");
+  }
+
+  function startTetris(){
+    tetris = {
+      board: tMakeEmptyBoard(),
+      score: 0,
+      dropInterval: 500,
+      lastDrop: Date.now(),
+      running: true,
+      timerSec: 120,
+      rafHandle: null,
+      timerHandle: null
+    };
+    tetris.current = tNewPiece();
+    document.getElementById("tetrisScore").textContent = "Score: 0";
+    document.getElementById("tetrisOverOverlay").style.display = "none";
+    showScreen("tetris");
+    tUpdateTimerDisplay();
+    tetris.timerHandle = setInterval(function(){
+      tetris.timerSec--;
+      tUpdateTimerDisplay();
+      if(tetris.timerSec<=0) endTetris();
+    }, 1000);
+    tetris.rafHandle = requestAnimationFrame(tTick);
   }
 
   // ---------- Quiz selection ----------
@@ -627,7 +872,8 @@
   function pickTestFacts(n){
     var pool = shuffle(allFacts.slice());
     pool.sort(function(x,y){ return tierOf(x) - tierOf(y); });
-    return pool.slice(0, n).map(function(f){ return {a:f.a, b:f.b}; });
+    var selected = pool.slice(0, n).map(function(f){ return {a:f.a, b:f.b}; });
+    return shuffle(selected);
   }
 
   // ---------- Quiz state ----------
@@ -833,6 +1079,7 @@
     } else {
       banner.textContent = label;
     }
+    document.getElementById("tetrisBonusBtn").style.display = score === total ? "block" : "none";
 
     var missedGrid = document.getElementById("missedGrid");
     missedGrid.innerHTML = "";
@@ -906,11 +1153,34 @@
     handleKey(btn.getAttribute("data-k"));
   });
 
+  document.getElementById("tetrisBonusBtn").addEventListener("click", function(){
+    getCtx();
+    startTetris();
+  });
+  document.getElementById("tLeft").addEventListener("click", function(){ tTryMove(-1, 0); });
+  document.getElementById("tRight").addEventListener("click", function(){ tTryMove(1, 0); });
+  document.getElementById("tDown").addEventListener("click", function(){ tTryMove(0, 1); });
+  document.getElementById("tRotate").addEventListener("click", function(){ tRotate(); });
+  document.getElementById("tDrop").addEventListener("click", function(){ tHardDrop(); });
+  document.getElementById("tetrisBackBtn").addEventListener("click", function(){
+    showScreen("home");
+    renderHome();
+  });
+
   document.addEventListener("keydown", function(e){
-    if(document.getElementById("screen-quiz").style.display !== "block") return;
-    if(e.key >= "0" && e.key <= "9"){ handleKey(e.key); }
-    else if(e.key === "Backspace"){ handleKey("back"); e.preventDefault(); }
-    else if(e.key === "Enter"){ handleKey("ok"); }
+    if(document.getElementById("screen-quiz").style.display === "block"){
+      if(e.key >= "0" && e.key <= "9"){ handleKey(e.key); }
+      else if(e.key === "Backspace"){ handleKey("back"); e.preventDefault(); }
+      else if(e.key === "Enter"){ handleKey("ok"); }
+      return;
+    }
+    if(document.getElementById("screen-tetris").style.display === "block"){
+      if(e.key === "ArrowLeft"){ tTryMove(-1, 0); e.preventDefault(); }
+      else if(e.key === "ArrowRight"){ tTryMove(1, 0); e.preventDefault(); }
+      else if(e.key === "ArrowDown"){ tTryMove(0, 1); e.preventDefault(); }
+      else if(e.key === "ArrowUp"){ tRotate(); e.preventDefault(); }
+      else if(e.key === " "){ tHardDrop(); e.preventDefault(); }
+    }
   });
 
   // ---------- Init ----------
