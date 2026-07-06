@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sangil's Times Table Quest</title>
+<style>
+  :root{
+    --bg1:#0b0d2a; --bg2:#1a1550; --card:#1e2158; --card2:#262a72;
+    --accent:#7c5cff; --accent2:#00d4ff; --green:#3ddc84; --yellow:#ffd166; --red:#ff5c7a; --gray:#3a3d63;
+    --text:#f5f6ff;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:
+      radial-gradient(1.5px 1.5px at 20px 30px, #fff 100%, transparent),
+      radial-gradient(1.5px 1.5px at 90px 80px, #fff 100%, transparent),
+      radial-gradient(1px 1px at 150px 40px, #fff 100%, transparent),
+      radial-gradient(2px 2px at 200px 120px, #fff 100%, transparent),
+      radial-gradient(1px 1px at 260px 60px, #fff 100%, transparent),
+      radial-gradient(1.5px 1.5px at 320px 150px, #fff 100%, transparent),
+      radial-gradient(1px 1px at 40px 180px, #fff 100%, transparent),
+      radial-gradient(1.5px 1.5px at 350px 20px, #fff 100%, transparent),
+      linear-gradient(180deg, var(--bg1), var(--bg2));
+    background-repeat: repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, no-repeat;
+    background-size: 400px 200px, 400px 200px, 400px 200px, 400px 200px, 400px 200px, 400px 200px, 400px 200px, 400px 200px, cover;
+    color:var(--text);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  #app{max-width:520px; margin:0 auto; padding:16px 16px 40px; min-height:100vh;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  h1{font-size:1.4rem; margin:8px 0; text-align:center; line-height:1.3;}
+  .muteBtn{
+    background:var(--card2); border:none; border-radius:50%; width:44px; height:44px;
+    font-size:1.2rem; cursor:pointer; color:var(--text); box-shadow:0 3px 0 rgba(0,0,0,.25);
+  }
+  .card{
+    background:linear-gradient(160deg, var(--card), var(--card2));
+    border-radius:20px; padding:16px; margin-bottom:16px;
+    box-shadow:0 6px 0 rgba(0,0,0,.25), 0 10px 24px rgba(0,0,0,.35);
+  }
+  .rockets{font-size:1.6rem; text-align:center; letter-spacing:4px; margin:6px 0;}
+  .sectionTitle{font-size:.95rem; opacity:.85; margin:0 0 8px; font-weight:600;}
+  .heatmap{display:grid; grid-template-columns:repeat(9, 1fr); gap:4px;}
+  .heatcell{
+    aspect-ratio:1; border-radius:6px; background:var(--gray);
+    display:flex; align-items:center; justify-content:center; font-size:.6rem; opacity:.9;
+  }
+  .heatcell.green{background:var(--green); color:#04351d;}
+  .heatcell.yellow{background:var(--yellow); color:#4a3600;}
+  .heatcell.red{background:var(--red); color:#3a0010;}
+  .progressWrap{background:#12143a; border-radius:20px; height:16px; margin-top:10px; overflow:hidden;}
+  .progressBar{background:linear-gradient(90deg, var(--accent2), var(--green)); height:100%; transition:width .4s ease;}
+  .progressLabel{text-align:center; font-size:.8rem; margin-top:6px; opacity:.8;}
+  .bigBtn{
+    display:block; width:100%; border:none; border-radius:18px; padding:20px;
+    font-size:1.3rem; font-weight:800; color:#101234; cursor:pointer;
+    background:linear-gradient(135deg, var(--accent2), var(--accent));
+    box-shadow:0 6px 0 #4b2fb0, 0 10px 20px rgba(0,0,0,.4);
+    margin-bottom:12px; color:#fff; letter-spacing:.5px;
+    transition:transform .12s ease;
+  }
+  .bigBtn:active{transform:translateY(4px); box-shadow:0 2px 0 #4b2fb0;}
+  .secondaryBtn{
+    display:block; width:100%; border:none; border-radius:16px; padding:16px;
+    font-size:1.05rem; font-weight:700; color:#fff; cursor:pointer;
+    background:var(--card2); box-shadow:0 4px 0 rgba(0,0,0,.3);
+    margin-bottom:12px;
+  }
+  .secondaryBtn:active{transform:translateY(3px); box-shadow:none;}
+
+  #screen-quiz{display:none;}
+  #screen-result{display:none;}
+  .quizTop{display:flex; justify-content:space-between; font-size:.85rem; opacity:.85; margin-bottom:6px;}
+  .questionCard{
+    background:linear-gradient(160deg, var(--card), var(--card2));
+    border-radius:24px; padding:30px 16px; text-align:center; margin-bottom:16px;
+    box-shadow:0 6px 0 rgba(0,0,0,.25), 0 10px 24px rgba(0,0,0,.35);
+    position:relative; overflow:hidden;
+  }
+  .questionText{font-size:3.2rem; font-weight:800; letter-spacing:2px;}
+  .answerDisplay{
+    font-size:2.2rem; font-weight:700; min-height:2.6rem; margin-top:10px;
+    color:var(--accent2); letter-spacing:2px;
+  }
+  .feedbackText{min-height:1.6rem; font-size:1.1rem; font-weight:700; margin-top:8px;}
+  .feedbackText.good{color:var(--green);}
+  .feedbackText.bad{color:var(--red);}
+  .fastBadge{
+    display:inline-block; background:var(--yellow); color:#4a3600; font-size:.8rem;
+    font-weight:800; border-radius:10px; padding:2px 8px; margin-left:6px;
+  }
+  .questionCard.shakeWrong{animation:shake .4s;}
+  .questionCard.pulseRight{animation:pulseRight .4s;}
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    20%{transform:translateX(-10px);}
+    40%{transform:translateX(10px);}
+    60%{transform:translateX(-6px);}
+    80%{transform:translateX(6px);}
+  }
+  @keyframes pulseRight{
+    0%{transform:scale(1);}
+    40%{transform:scale(1.06);}
+    100%{transform:scale(1);}
+  }
+  .keypad{display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;}
+  .key{
+    background:var(--card2); border:none; border-radius:16px; padding:20px 0;
+    font-size:1.5rem; font-weight:800; color:#fff; cursor:pointer;
+    box-shadow:0 4px 0 rgba(0,0,0,.3);
+  }
+  .key:active{transform:translateY(3px); box-shadow:none;}
+  .key.wide{grid-column:span 1;}
+  .key.confirm{background:linear-gradient(135deg, var(--green), #1fae63); box-shadow:0 4px 0 #157a44;}
+  .key.back{background:linear-gradient(135deg, var(--red), #d43a5c); box-shadow:0 4px 0 #9c2140;}
+
+  .star{font-size:2rem;}
+  .starRow{text-align:center; margin:6px 0 2px;}
+  .scoreText{text-align:center; font-size:1.6rem; font-weight:800; margin:4px 0;}
+  .scoreLabel{text-align:center; font-size:1rem; opacity:.85; margin-bottom:14px;}
+  .missedGrid{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:8px;}
+  .missedCard{
+    background:var(--card2); border-radius:14px; padding:12px 16px; font-size:1.3rem; font-weight:800;
+    box-shadow:0 3px 0 rgba(0,0,0,.3);
+  }
+  .comboPopup{
+    position:fixed; top:40%; left:50%; transform:translate(-50%,-50%);
+    font-size:2rem; font-weight:900; color:var(--yellow); pointer-events:none;
+    text-shadow:0 0 10px rgba(0,0,0,.6); z-index:50; animation:comboPop 1s ease forwards;
+  }
+  @keyframes comboPop{
+    0%{opacity:0; transform:translate(-50%,-40%) scale(.6);}
+    20%{opacity:1; transform:translate(-50%,-50%) scale(1.15);}
+    70%{opacity:1; transform:translate(-50%,-50%) scale(1);}
+    100%{opacity:0; transform:translate(-50%,-60%) scale(1);}
+  }
+  #confetti-layer{position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:60;}
+  .confetti-piece{position:absolute; top:-30px; font-size:1.6rem; animation-name:confettiFall; animation-timing-function:ease-in; animation-fill-mode:forwards;}
+  @keyframes confettiFall{
+    0%{transform:translateY(0) rotate(0deg); opacity:1;}
+    100%{transform:translateY(110vh) rotate(360deg); opacity:0;}
+  }
+  .perfectBanner{
+    text-align:center; font-size:1.4rem; font-weight:900; color:var(--yellow);
+    margin:6px 0 12px; animation:pulseRight 1s ease infinite;
+  }
+  @media (max-width:380px){
+    .questionText{font-size:2.6rem;}
+    .heatcell{font-size:.5rem;}
+    h1{font-size:1.2rem;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="screen-home">
+    <div class="topbar">
+      <div style="width:44px;"></div>
+      <h1>🚀 Sangil's Times Table Quest</h1>
+      <button class="muteBtn" id="muteBtn">🔊</button>
+    </div>
+
+    <div class="card">
+      <div class="sectionTitle">Today's Missions</div>
+      <div class="rockets" id="rocketRow">🚀🚀🚀🚀🚀</div>
+      <div class="progressLabel" id="todayLabel">0 / 5 tests today</div>
+    </div>
+
+    <div class="card">
+      <div class="sectionTitle">⭐ Times Table Mastery Map</div>
+      <div class="heatmap" id="heatmap"></div>
+      <div class="progressWrap"><div class="progressBar" id="masteryBar" style="width:0%"></div></div>
+      <div class="progressLabel" id="masteryLabel">Mastered: 0 / 72</div>
+    </div>
+
+    <button class="bigBtn" id="startTestBtn">START TEST 🚀</button>
+    <button class="secondaryBtn" id="practiceBtn" style="display:none;">Practice Missed Ones 🔁</button>
+  </div>
+
+  <div id="screen-quiz">
+    <div class="quizTop">
+      <span id="quizProgressLabel">Passed 0 / 20</span>
+      <span id="quizStreakLabel">⭐ 0</span>
+    </div>
+    <div class="questionCard" id="questionCard">
+      <div class="questionText" id="questionText">? × ? = ?</div>
+      <div class="answerDisplay" id="answerDisplay">&nbsp;</div>
+      <div class="feedbackText" id="feedbackText">&nbsp;</div>
+    </div>
+    <div class="keypad" id="keypad">
+      <button class="key" data-k="1">1</button>
+      <button class="key" data-k="2">2</button>
+      <button class="key" data-k="3">3</button>
+      <button class="key" data-k="4">4</button>
+      <button class="key" data-k="5">5</button>
+      <button class="key" data-k="6">6</button>
+      <button class="key" data-k="7">7</button>
+      <button class="key" data-k="8">8</button>
+      <button class="key" data-k="9">9</button>
+      <button class="key back" data-k="back">⌫</button>
+      <button class="key" data-k="0">0</button>
+      <button class="key confirm" data-k="ok">✓</button>
+    </div>
+  </div>
+
+  <div id="screen-result">
+    <h1 id="resultTitle">Test Complete!</h1>
+    <div class="card">
+      <div class="starRow" id="starRow"></div>
+      <div class="scoreText" id="scoreText">0 / 20</div>
+      <div class="scoreLabel" id="perfectBanner"></div>
+      <div class="sectionTitle" id="missedTitle" style="text-align:center;">Let's review these:</div>
+      <div class="missedGrid" id="missedGrid"></div>
+    </div>
+    <button class="secondaryBtn" id="practiceMissedFromResult" style="display:none;">Practice Missed Ones 🔁</button>
+    <button class="bigBtn" id="newTestBtn">New Test 🚀</button>
+  </div>
+
+</div>
+<div id="confetti-layer"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STATS_KEY = "sangil_stats";
+  var TODAY_KEY = "sangil_today";
+  var MUTE_KEY = "sangil_muted";
+  var LAST_MISSED_KEY = "sangil_lastMissed";
+
+  var allFacts = [];
+  for(var a=2; a<=9; a++){
+    for(var b=1; b<=9; b++){ allFacts.push({a:a,b:b}); }
+  }
+  function factKey(f){ return f.a+"x"+f.b; }
+
+  function todayStr(){
+    var d = new Date();
+    return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+  }
+
+  function loadStats(){
+    var raw = localStorage.getItem(STATS_KEY);
+    var stats = raw ? JSON.parse(raw) : {};
+    allFacts.forEach(function(f){
+      var k = factKey(f);
+      if(!stats[k]) stats[k] = {attempts:0, correct:0, history:[]};
+    });
+    return stats;
+  }
+  function saveStats(stats){ localStorage.setItem(STATS_KEY, JSON.stringify(stats)); }
+
+  function loadToday(){
+    var raw = localStorage.getItem(TODAY_KEY);
+    var t = raw ? JSON.parse(raw) : {date: todayStr(), count:0};
+    if(t.date !== todayStr()){ t = {date: todayStr(), count:0}; }
+    return t;
+  }
+  function saveToday(t){ localStorage.setItem(TODAY_KEY, JSON.stringify(t)); }
+
+  function isMuted(){ return localStorage.getItem(MUTE_KEY) === "true"; }
+  function setMuted(v){ localStorage.setItem(MUTE_KEY, v ? "true" : "false"); }
+
+  var stats = loadStats();
+  var today = loadToday();
+
+  // ---------- Audio ----------
+  var audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AC();
+    }
+    if(audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+
+  function playTone(freq, startTime, duration, type, peakGain){
+    var ctx = getCtx();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = type || "sine";
+    osc.frequency.setValueAtTime(freq, startTime);
+    gain.gain.setValueAtTime(0.0001, startTime);
+    gain.gain.exponentialRampToValueAtTime(peakGain || 0.2, startTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.02);
+  }
+
+  function playCorrectSound(){
+    if(isMuted()) return;
+    var ctx = getCtx();
+    var t = ctx.currentTime;
+    var notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach(function(f, i){
+      playTone(f, t + i*0.09, 0.16, "triangle", 0.18);
+    });
+  }
+
+  function playWrongSound(){
+    if(isMuted()) return;
+    var ctx = getCtx();
+    var t = ctx.currentTime;
+    playTone(220, t, 0.28, "sine", 0.12);
+    playTone(196, t + 0.14, 0.32, "sine", 0.1);
+  }
+
+  function playFanfare(){
+    if(isMuted()) return;
+    var ctx = getCtx();
+    var t = ctx.currentTime;
+    var seq = [523.25,523.25,523.25,659.25,783.99,1046.5,1318.5];
+    seq.forEach(function(f,i){
+      playTone(f, t + i*0.13, 0.22, "triangle", 0.2);
+    });
+  }
+
+  // ---------- Speech ----------
+  function speak(text){
+    if(isMuted()) return;
+    if(!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    u.rate = 1;
+    u.pitch = 1.1;
+    window.speechSynthesis.speak(u);
+  }
+
+  var PRAISES = ["Great job!","Awesome!","You got it!","Brilliant!","Super smart!","Fantastic!","You're on fire!","Perfect!"];
+  var ENCOURAGE = ["Hmm, think again!","Almost! Try once more!","Give it another try!","You can do it!","So close, try again!"];
+
+  function randomFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function numberWord(n){
+    var words = ["zero","one","two","three","four","five","six","seven","eight","nine","ten",
+      "eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty",
+      "twenty-one","twenty-two","twenty-three","twenty-four","twenty-five","twenty-six","twenty-seven","twenty-eight",
+      "twenty-nine","thirty","thirty-one","thirty-two","thirty-three","thirty-four","thirty-five","thirty-six",
+      "thirty-seven","thirty-eight","thirty-nine","forty","forty-one","forty-two","forty-three","forty-four",
+      "forty-five","forty-six","forty-seven","forty-eight","forty-nine","fifty","fifty-one","fifty-two","fifty-three",
+      "fifty-four","fifty-five","fifty-six","fifty-seven","fifty-eight","fifty-nine","sixty","sixty-one","sixty-two",
+      "sixty-three","sixty-four","sixty-five","sixty-six","sixty-seven","sixty-eight","sixty-nine","seventy",
+      "seventy-one","seventy-two","seventy-three","seventy-four","seventy-five","seventy-six","seventy-seven",
+      "seventy-eight","seventy-nine","eighty","eighty-one"];
+    return words[n] || String(n);
+  }
+
+  // ---------- Confetti ----------
+  var CONFETTI_EMOJI = ["🎉","⭐","🌟","✨","🚀","🎊","💫"];
+  function launchConfetti(count){
+    var layer = document.getElementById("confetti-layer");
+    for(var i=0;i<count;i++){
+      (function(){
+        var span = document.createElement("span");
+        span.className = "confetti-piece";
+        span.textContent = randomFrom(CONFETTI_EMOJI);
+        var left = Math.random()*100;
+        var duration = 1.6 + Math.random()*1.4;
+        var delay = Math.random()*0.6;
+        span.style.left = left+"vw";
+        span.style.animationDuration = duration+"s";
+        span.style.animationDelay = delay+"s";
+        span.style.fontSize = (1.1 + Math.random()*1.4)+"rem";
+        layer.appendChild(span);
+        setTimeout(function(){ span.remove(); }, (duration+delay)*1000 + 200);
+      })();
+    }
+  }
+
+  function showComboPopup(text){
+    var el = document.createElement("div");
+    el.className = "comboPopup";
+    el.textContent = text;
+    document.body.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 1000);
+  }
+
+  // ---------- Mastery / heatmap ----------
+  function factMastery(k){
+    var s = stats[k];
+    if(!s || s.attempts === 0) return "gray";
+    var hist = s.history;
+    if(hist.length >= 3 && hist[hist.length-1] && hist[hist.length-2] && hist[hist.length-3]) return "green";
+    var acc = s.correct / s.attempts;
+    if(acc < 0.5) return "red";
+    return "yellow";
+  }
+
+  function recordFactResult(f, correct){
+    var k = factKey(f);
+    var s = stats[k];
+    s.attempts++;
+    if(correct) s.correct++;
+    s.history.push(correct);
+    if(s.history.length > 12) s.history.shift();
+    saveStats(stats);
+  }
+
+  function renderHeatmap(){
+    var container = document.getElementById("heatmap");
+    container.innerHTML = "";
+    var masteredCount = 0;
+    for(var a=2; a<=9; a++){
+      for(var b=1; b<=9; b++){
+        var k = a+"x"+b;
+        var m = factMastery(k);
+        if(m === "green") masteredCount++;
+        var cell = document.createElement("div");
+        cell.className = "heatcell " + m;
+        cell.textContent = a+"×"+b;
+        container.appendChild(cell);
+      }
+    }
+    var pct = Math.round((masteredCount/72)*100);
+    document.getElementById("masteryBar").style.width = pct+"%";
+    document.getElementById("masteryLabel").textContent = "Mastered: "+masteredCount+" / 72";
+  }
+
+  function renderToday(){
+    var count = today.count;
+    var filled = Math.min(count, 5);
+    var row = "";
+    for(var i=0;i<5;i++){ row += (i < filled ? "🚀" : "⚪"); }
+    if(count > 5) row += " x" + count;
+    document.getElementById("rocketRow").textContent = row;
+    document.getElementById("todayLabel").textContent = Math.min(count,5)+" / 5 tests today" + (count>5 ? " (bonus round!)" : "");
+  }
+
+  function renderMuteBtn(){
+    document.getElementById("muteBtn").textContent = isMuted() ? "🔇" : "🔊";
+  }
+
+  function renderHome(){
+    renderHeatmap();
+    renderToday();
+    renderMuteBtn();
+    var lastMissedRaw = localStorage.getItem(LAST_MISSED_KEY);
+    var lastMissed = lastMissedRaw ? JSON.parse(lastMissedRaw) : [];
+    document.getElementById("practiceBtn").style.display = lastMissed.length > 0 ? "block" : "none";
+  }
+
+  // ---------- Screen switching ----------
+  function showScreen(name){
+    document.getElementById("screen-home").style.display = name === "home" ? "block" : "none";
+    document.getElementById("screen-quiz").style.display = name === "quiz" ? "block" : "none";
+    document.getElementById("screen-result").style.display = name === "result" ? "block" : "none";
+  }
+
+  // ---------- Quiz selection ----------
+  function shuffle(arr){
+    for(var i=arr.length-1; i>0; i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var tmp = arr[i]; arr[i]=arr[j]; arr[j]=tmp;
+    }
+    return arr;
+  }
+
+  function tierOf(f){
+    var s = stats[factKey(f)];
+    if(!s || s.attempts === 0) return 3;
+    var lastWrong = s.history.length > 0 && s.history[s.history.length-1] === false;
+    if(lastWrong) return 1;
+    var acc = s.correct / s.attempts;
+    if(acc < 0.6) return 2;
+    return 4;
+  }
+
+  function pickTestFacts(n){
+    var pool = shuffle(allFacts.slice());
+    pool.sort(function(x,y){ return tierOf(x) - tierOf(y); });
+    return pool.slice(0, n).map(function(f){ return {a:f.a, b:f.b}; });
+  }
+
+  // ---------- Quiz state ----------
+  var quiz = null;
+
+  function startQuiz(facts, practiceMode){
+    quiz = {
+      queue: facts.map(function(f){ return {a:f.a, b:f.b}; }),
+      originalCount: facts.length,
+      passedCount: 0,
+      firstAppearanceSeen: {},
+      firstAppearanceCorrect: {},
+      wrongFactsMap: {},
+      attemptNum: 1,
+      streak: 0,
+      inputStr: "",
+      qStartTime: 0,
+      locked: false,
+      practiceMode: !!practiceMode
+    };
+    showScreen("quiz");
+    nextQuestion();
+  }
+
+  function currentFact(){ return quiz.queue[0]; }
+
+  function updateQuizTop(){
+    document.getElementById("quizProgressLabel").textContent =
+      "Passed " + quiz.passedCount + " / " + quiz.originalCount;
+    document.getElementById("quizStreakLabel").textContent = "⭐ " + quiz.streak;
+  }
+
+  function nextQuestion(){
+    if(!quiz.queue.length){
+      endQuiz();
+      return;
+    }
+    quiz.attemptNum = 1;
+    quiz.inputStr = "";
+    quiz.locked = false;
+    var f = currentFact();
+    document.getElementById("questionText").textContent = f.a + " × " + f.b + " = ?";
+    document.getElementById("answerDisplay").textContent = " ";
+    document.getElementById("feedbackText").textContent = " ";
+    document.getElementById("feedbackText").className = "feedbackText";
+    document.getElementById("questionCard").className = "questionCard";
+    updateQuizTop();
+    quiz.qStartTime = Date.now();
+  }
+
+  function updateAnswerDisplay(){
+    document.getElementById("answerDisplay").textContent = quiz.inputStr.length ? quiz.inputStr : " ";
+  }
+
+  function handleKey(k){
+    if(quiz.locked) return;
+    if(k === "back"){
+      quiz.inputStr = quiz.inputStr.slice(0, -1);
+      updateAnswerDisplay();
+    } else if(k === "ok"){
+      submitAnswer();
+    } else {
+      if(quiz.inputStr.length < 3) quiz.inputStr += k;
+      updateAnswerDisplay();
+    }
+  }
+
+  function submitAnswer(){
+    if(quiz.inputStr === "") return;
+    var f = currentFact();
+    var correctAnswer = f.a * f.b;
+    var given = parseInt(quiz.inputStr, 10);
+    var elapsed = Date.now() - quiz.qStartTime;
+    var isFirstAppearance = !quiz.firstAppearanceSeen[factKey(f)];
+    if(isFirstAppearance) quiz.firstAppearanceSeen[factKey(f)] = true;
+
+    var isCorrect = given === correctAnswer;
+    quiz.locked = true;
+
+    if(isCorrect){
+      onCorrectAnswer(f, isFirstAppearance, elapsed);
+    } else {
+      onWrongAnswer(f, isFirstAppearance, correctAnswer);
+    }
+  }
+
+  function onCorrectAnswer(f, isFirstAppearance, elapsed){
+    playCorrectSound();
+    var praise = randomFrom(PRAISES);
+    var fastBonus = elapsed < 3000;
+    speak(praise);
+
+    var fbEl = document.getElementById("feedbackText");
+    fbEl.className = "feedbackText good";
+    fbEl.innerHTML = "⭐ " + praise + (fastBonus ? ' <span class="fastBadge">⚡ Fast!</span>' : "");
+    document.getElementById("questionCard").className = "questionCard pulseRight";
+
+    if(quiz.attemptNum === 1){
+      recordFactResult(f, true);
+      if(isFirstAppearance) quiz.firstAppearanceCorrect[factKey(f)] = true;
+      quiz.streak++;
+      if(quiz.streak > 0 && quiz.streak % 3 === 0){
+        showComboPopup("🔥 " + quiz.streak + " in a row!");
+      }
+    } else {
+      recordFactResult(f, true);
+      quiz.streak = 0;
+    }
+
+    quiz.queue.shift();
+    quiz.passedCount++;
+    updateQuizTop();
+
+    setTimeout(function(){
+      nextQuestion();
+    }, 700);
+  }
+
+  function onWrongAnswer(f, isFirstAppearance, correctAnswer){
+    var fbEl = document.getElementById("feedbackText");
+    document.getElementById("questionCard").className = "questionCard shakeWrong";
+    quiz.streak = 0;
+
+    if(quiz.attemptNum === 1){
+      if(isFirstAppearance){
+        quiz.firstAppearanceCorrect[factKey(f)] = false;
+        quiz.wrongFactsMap[factKey(f)] = {a:f.a, b:f.b, answer:correctAnswer};
+      }
+      playWrongSound();
+      var enc = randomFrom(ENCOURAGE);
+      speak(enc);
+      fbEl.className = "feedbackText bad";
+      fbEl.textContent = "❌ " + enc;
+      quiz.attemptNum = 2;
+      quiz.inputStr = "";
+      updateAnswerDisplay();
+      setTimeout(function(){ quiz.locked = false; }, 500);
+    } else {
+      playWrongSound();
+      recordFactResult(f, false);
+      quiz.wrongFactsMap[factKey(f)] = {a:f.a, b:f.b, answer:correctAnswer};
+      var sentence = f.a + " times " + f.b + " is " + correctAnswer + ". Let's remember it!";
+      speak(sentence);
+      fbEl.className = "feedbackText bad";
+      document.getElementById("answerDisplay").textContent = f.a + " × " + f.b + " = " + correctAnswer;
+      fbEl.textContent = "The answer is " + correctAnswer + ". Let's try it again later!";
+
+      quiz.queue.shift();
+      quiz.queue.push({a:f.a, b:f.b});
+
+      setTimeout(function(){
+        nextQuestion();
+      }, 1800);
+    }
+  }
+
+  function endQuiz(){
+    if(quiz.practiceMode){
+      renderHome();
+      showScreen("home");
+      return;
+    }
+
+    var correctFirstTry = 0;
+    var missedList = [];
+    Object.keys(quiz.firstAppearanceCorrect).forEach(function(k){
+      if(quiz.firstAppearanceCorrect[k]) correctFirstTry++;
+    });
+    Object.keys(quiz.wrongFactsMap).forEach(function(k){
+      missedList.push(quiz.wrongFactsMap[k]);
+    });
+
+    today.count++;
+    saveToday(today);
+    localStorage.setItem(LAST_MISSED_KEY, JSON.stringify(missedList));
+
+    renderResult(correctFirstTry, quiz.originalCount, missedList);
+    showScreen("result");
+  }
+
+  function renderResult(score, total, missedList){
+    var stars = 0, label = "";
+    if(score === total){ stars = 3; label = "PERFECT!"; }
+    else if(score >= 18){ stars = 2; label = "Awesome work!"; }
+    else if(score >= 15){ stars = 1; label = "Nice try!"; }
+    else { stars = 0; label = "Keep practicing!"; }
+
+    var starStr = "";
+    for(var i=0;i<3;i++){ starStr += (i < stars ? "⭐" : "☆"); }
+    document.getElementById("starRow").innerHTML = '<span class="star">'+starStr+'</span>';
+    document.getElementById("scoreText").textContent = score + " / " + total;
+
+    var banner = document.getElementById("perfectBanner");
+    if(score === total){
+      banner.innerHTML = '<div class="perfectBanner">🏆 PERFECT SCORE, SANGIL! 🏆</div>';
+      launchConfetti(60);
+      playFanfare();
+      speak("PERFECT SCORE, SANGIL!");
+    } else {
+      banner.textContent = label;
+    }
+
+    var missedGrid = document.getElementById("missedGrid");
+    missedGrid.innerHTML = "";
+    if(missedList.length === 0){
+      document.getElementById("missedTitle").textContent = "No mistakes — amazing!";
+    } else {
+      document.getElementById("missedTitle").textContent = "Let's review these:";
+      missedList.forEach(function(m){
+        var card = document.createElement("div");
+        card.className = "missedCard";
+        card.textContent = m.a + " × " + m.b + " = " + m.answer;
+        missedGrid.appendChild(card);
+      });
+    }
+
+    document.getElementById("practiceMissedFromResult").style.display = missedList.length > 0 ? "block" : "none";
+    document.getElementById("practiceMissedFromResult").onclick = function(){
+      startQuiz(missedList.map(function(m){ return {a:m.a, b:m.b}; }), true);
+    };
+
+    renderHeatmap();
+    renderToday();
+  }
+
+  // ---------- Event wiring ----------
+  document.getElementById("startTestBtn").addEventListener("click", function(){
+    getCtx();
+    startQuiz(pickTestFacts(20), false);
+  });
+
+  document.getElementById("newTestBtn").addEventListener("click", function(){
+    startQuiz(pickTestFacts(20), false);
+  });
+
+  document.getElementById("practiceBtn").addEventListener("click", function(){
+    getCtx();
+    var raw = localStorage.getItem(LAST_MISSED_KEY);
+    var missed = raw ? JSON.parse(raw) : [];
+    if(missed.length){
+      startQuiz(missed.map(function(m){ return {a:m.a, b:m.b}; }), true);
+    }
+  });
+
+  document.getElementById("muteBtn").addEventListener("click", function(){
+    setMuted(!isMuted());
+    renderMuteBtn();
+  });
+
+  document.getElementById("keypad").addEventListener("click", function(e){
+    var btn = e.target.closest(".key");
+    if(!btn) return;
+    handleKey(btn.getAttribute("data-k"));
+  });
+
+  document.addEventListener("keydown", function(e){
+    if(document.getElementById("screen-quiz").style.display !== "block") return;
+    if(e.key >= "0" && e.key <= "9"){ handleKey(e.key); }
+    else if(e.key === "Backspace"){ handleKey("back"); e.preventDefault(); }
+    else if(e.key === "Enter"){ handleKey("ok"); }
+  });
+
+  // ---------- Init ----------
+  renderHome();
+  showScreen("home");
+})();
+</script>
+</body>
+</html>
