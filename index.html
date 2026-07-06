@@ -72,8 +72,30 @@
   }
   .secondaryBtn:active{transform:translateY(3px); box-shadow:none;}
 
+  #screen-name{display:none;}
+  #screen-home{display:none;}
   #screen-quiz{display:none;}
   #screen-result{display:none;}
+  #screen-admin{display:none;}
+
+  .nameInput{
+    width:100%; padding:16px; border-radius:14px; border:none; font-size:1.1rem;
+    margin:10px 0 14px; background:#12143a; color:#fff; text-align:center;
+  }
+  .nameInput::placeholder{color:rgba(255,255,255,.5);}
+  .profileBar{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:.9rem; opacity:.9; margin:0 4px 14px;
+  }
+  .switchBtn{
+    background:none; border:1px solid rgba(255,255,255,.35); color:#fff;
+    border-radius:10px; padding:5px 12px; font-size:.8rem; cursor:pointer;
+  }
+  .historyList{max-height:180px; overflow-y:auto; margin-top:6px;}
+  .historyRow{
+    display:flex; justify-content:space-between; font-size:.85rem;
+    padding:6px 2px; border-bottom:1px solid rgba(255,255,255,.08);
+  }
   .quizTop{display:flex; justify-content:space-between; font-size:.85rem; opacity:.85; margin-bottom:6px;}
   .questionCard{
     background:linear-gradient(160deg, var(--card), var(--card2));
@@ -158,11 +180,25 @@
 <body>
 <div id="app">
 
+  <div id="screen-name">
+    <h1>🚀 Sangil's Times Table Quest</h1>
+    <div class="card">
+      <div class="sectionTitle">Who's playing?</div>
+      <div id="profileList"></div>
+      <input type="text" id="nameInput" class="nameInput" placeholder="Type your name" maxlength="20">
+      <button class="bigBtn" id="nameGoBtn">Let's Go 🚀</button>
+    </div>
+  </div>
+
   <div id="screen-home">
     <div class="topbar">
-      <div style="width:44px;"></div>
+      <button class="muteBtn" id="adminBtn" title="Parent Dashboard">🛠️</button>
       <h1>🚀 Sangil's Times Table Quest</h1>
       <button class="muteBtn" id="muteBtn">🔊</button>
+    </div>
+    <div class="profileBar">
+      <span id="greeting">Hi! 👋</span>
+      <button class="switchBtn" id="switchProfileBtn">Switch 🔄</button>
     </div>
 
     <div class="card">
@@ -221,6 +257,15 @@
     <button class="bigBtn" id="newTestBtn">New Test 🚀</button>
   </div>
 
+  <div id="screen-admin">
+    <div class="topbar">
+      <button class="muteBtn" id="adminBackBtn">←</button>
+      <h1>📊 Parent Dashboard</h1>
+      <div style="width:44px;"></div>
+    </div>
+    <div id="adminList"></div>
+  </div>
+
 </div>
 <div id="confetti-layer"></div>
 
@@ -228,10 +273,9 @@
 (function(){
   "use strict";
 
-  var STATS_KEY = "sangil_stats";
-  var TODAY_KEY = "sangil_today";
   var MUTE_KEY = "sangil_muted";
-  var LAST_MISSED_KEY = "sangil_lastMissed";
+  var PROFILES_KEY = "sangil_profiles";
+  var ACTIVE_KEY = "sangil_active_profile";
 
   var allFacts = [];
   for(var a=2; a<=9; a++){
@@ -244,30 +288,65 @@
     return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
   }
 
-  function loadStats(){
-    var raw = localStorage.getItem(STATS_KEY);
-    var stats = raw ? JSON.parse(raw) : {};
+  function nsKey(base, profile){ return "sangil_" + base + "__" + encodeURIComponent(profile); }
+
+  function getProfiles(){
+    var raw = localStorage.getItem(PROFILES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }
+  function saveProfiles(list){ localStorage.setItem(PROFILES_KEY, JSON.stringify(list)); }
+  function ensureProfile(name){
+    var list = getProfiles();
+    if(list.indexOf(name) === -1){ list.push(name); saveProfiles(list); }
+  }
+  function setActiveProfile(name){ localStorage.setItem(ACTIVE_KEY, name); }
+  function chooseProfile(name){
+    name = (name || "").trim();
+    if(!name) return;
+    ensureProfile(name);
+    setActiveProfile(name);
+    location.reload();
+  }
+
+  var activeProfile = localStorage.getItem(ACTIVE_KEY);
+
+  function emptyStats(){
+    var s = {};
+    allFacts.forEach(function(f){ s[factKey(f)] = {attempts:0, correct:0, history:[]}; });
+    return s;
+  }
+  function loadStatsFor(profile){
+    var raw = localStorage.getItem(nsKey("stats", profile));
+    var s = raw ? JSON.parse(raw) : {};
     allFacts.forEach(function(f){
       var k = factKey(f);
-      if(!stats[k]) stats[k] = {attempts:0, correct:0, history:[]};
+      if(!s[k]) s[k] = {attempts:0, correct:0, history:[]};
     });
-    return stats;
+    return s;
   }
-  function saveStats(stats){ localStorage.setItem(STATS_KEY, JSON.stringify(stats)); }
+  function saveStatsFor(profile, s){ localStorage.setItem(nsKey("stats", profile), JSON.stringify(s)); }
 
-  function loadToday(){
-    var raw = localStorage.getItem(TODAY_KEY);
+  function loadTodayFor(profile){
+    var raw = localStorage.getItem(nsKey("today", profile));
     var t = raw ? JSON.parse(raw) : {date: todayStr(), count:0};
     if(t.date !== todayStr()){ t = {date: todayStr(), count:0}; }
     return t;
   }
-  function saveToday(t){ localStorage.setItem(TODAY_KEY, JSON.stringify(t)); }
+  function saveTodayFor(profile, t){ localStorage.setItem(nsKey("today", profile), JSON.stringify(t)); }
+
+  function loadHistoryFor(profile){
+    var raw = localStorage.getItem(nsKey("history", profile));
+    return raw ? JSON.parse(raw) : [];
+  }
+  function saveHistoryFor(profile, hist){ localStorage.setItem(nsKey("history", profile), JSON.stringify(hist)); }
 
   function isMuted(){ return localStorage.getItem(MUTE_KEY) === "true"; }
   function setMuted(v){ localStorage.setItem(MUTE_KEY, v ? "true" : "false"); }
 
-  var stats = loadStats();
-  var today = loadToday();
+  var stats = activeProfile ? loadStatsFor(activeProfile) : emptyStats();
+  var today = activeProfile ? loadTodayFor(activeProfile) : {date: todayStr(), count:0};
+  function saveStats(s){ if(activeProfile) saveStatsFor(activeProfile, s); }
+  function saveToday(t){ if(activeProfile) saveTodayFor(activeProfile, t); }
 
   // ---------- Audio ----------
   var audioCtx = null;
@@ -392,8 +471,8 @@
   }
 
   // ---------- Mastery / heatmap ----------
-  function factMastery(k){
-    var s = stats[k];
+  function factMasteryOf(statsObj, k){
+    var s = statsObj[k];
     if(!s || s.attempts === 0) return "gray";
     var hist = s.history;
     if(hist.length >= 3 && hist[hist.length-1] && hist[hist.length-2] && hist[hist.length-3]) return "green";
@@ -401,6 +480,7 @@
     if(acc < 0.5) return "red";
     return "yellow";
   }
+  function factMastery(k){ return factMasteryOf(stats, k); }
 
   function recordFactResult(f, correct){
     var k = factKey(f);
@@ -446,20 +526,83 @@
     document.getElementById("muteBtn").textContent = isMuted() ? "🔇" : "🔊";
   }
 
+  function loadLastMissed(){
+    var raw = localStorage.getItem(nsKey("lastMissed", activeProfile));
+    return raw ? JSON.parse(raw) : [];
+  }
+  function saveLastMissed(list){ localStorage.setItem(nsKey("lastMissed", activeProfile), JSON.stringify(list)); }
+
   function renderHome(){
+    document.getElementById("greeting").textContent = "Hi, " + activeProfile + "! 👋";
     renderHeatmap();
     renderToday();
     renderMuteBtn();
-    var lastMissedRaw = localStorage.getItem(LAST_MISSED_KEY);
-    var lastMissed = lastMissedRaw ? JSON.parse(lastMissedRaw) : [];
+    var lastMissed = loadLastMissed();
     document.getElementById("practiceBtn").style.display = lastMissed.length > 0 ? "block" : "none";
+  }
+
+  function starsFor(score, total){
+    if(score === total) return 3;
+    if(score >= 18) return 2;
+    if(score >= 15) return 1;
+    return 0;
+  }
+
+  function renderAdmin(){
+    var container = document.getElementById("adminList");
+    container.innerHTML = "";
+    var profiles = getProfiles();
+    if(profiles.length === 0){
+      container.innerHTML = '<div class="card">No learners yet.</div>';
+      return;
+    }
+    profiles.forEach(function(name){
+      var s = loadStatsFor(name);
+      var t = loadTodayFor(name);
+      var hist = loadHistoryFor(name);
+      var masteredCount = 0;
+      allFacts.forEach(function(f){
+        if(factMasteryOf(s, factKey(f)) === "green") masteredCount++;
+      });
+      var lastTest = hist.length ? hist[hist.length - 1] : null;
+      var historyRows = hist.slice(-5).reverse().map(function(h){
+        var starStr = "";
+        for(var i=0;i<3;i++){ starStr += i < h.stars ? "⭐" : "☆"; }
+        return '<div class="historyRow"><span>' + h.date + '</span><span>' + h.score + ' / ' + h.total + '</span><span>' + starStr + '</span></div>';
+      }).join("");
+
+      var card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML =
+        '<div class="sectionTitle">👤 ' + name + '</div>' +
+        '<div class="progressLabel">Today: ' + t.count + ' tests &nbsp;|&nbsp; Total tests: ' + hist.length + '</div>' +
+        '<div class="progressWrap"><div class="progressBar" style="width:' + Math.round(masteredCount/72*100) + '%"></div></div>' +
+        '<div class="progressLabel">Mastered: ' + masteredCount + ' / 72</div>' +
+        (lastTest ? '<div class="progressLabel">Last test: ' + lastTest.date + ' — ' + lastTest.score + ' / ' + lastTest.total + '</div>' : '<div class="progressLabel">No tests yet.</div>') +
+        (historyRows ? '<div class="sectionTitle" style="margin-top:10px;">Recent Tests</div><div class="historyList">' + historyRows + '</div>' : '');
+      container.appendChild(card);
+    });
+  }
+
+  function renderNameScreen(){
+    var container = document.getElementById("profileList");
+    container.innerHTML = "";
+    getProfiles().forEach(function(n){
+      var btn = document.createElement("button");
+      btn.className = "secondaryBtn";
+      btn.textContent = "👤 " + n;
+      btn.addEventListener("click", function(){ chooseProfile(n); });
+      container.appendChild(btn);
+    });
   }
 
   // ---------- Screen switching ----------
   function showScreen(name){
+    document.getElementById("screen-name").style.display = name === "name" ? "block" : "none";
     document.getElementById("screen-home").style.display = name === "home" ? "block" : "none";
     document.getElementById("screen-quiz").style.display = name === "quiz" ? "block" : "none";
     document.getElementById("screen-result").style.display = name === "result" ? "block" : "none";
+    document.getElementById("screen-admin").style.display = name === "admin" ? "block" : "none";
   }
 
   // ---------- Quiz selection ----------
@@ -661,18 +804,20 @@
 
     today.count++;
     saveToday(today);
-    localStorage.setItem(LAST_MISSED_KEY, JSON.stringify(missedList));
+    saveLastMissed(missedList);
+
+    var hist = loadHistoryFor(activeProfile);
+    hist.push({date: todayStr(), score: correctFirstTry, total: quiz.originalCount, stars: starsFor(correctFirstTry, quiz.originalCount)});
+    if(hist.length > 50) hist.shift();
+    saveHistoryFor(activeProfile, hist);
 
     renderResult(correctFirstTry, quiz.originalCount, missedList);
     showScreen("result");
   }
 
   function renderResult(score, total, missedList){
-    var stars = 0, label = "";
-    if(score === total){ stars = 3; label = "PERFECT!"; }
-    else if(score >= 18){ stars = 2; label = "Awesome work!"; }
-    else if(score >= 15){ stars = 1; label = "Nice try!"; }
-    else { stars = 0; label = "Keep practicing!"; }
+    var stars = starsFor(score, total);
+    var label = stars === 3 ? "PERFECT!" : stars === 2 ? "Awesome work!" : stars === 1 ? "Nice try!" : "Keep practicing!";
 
     var starStr = "";
     for(var i=0;i<3;i++){ starStr += (i < stars ? "⭐" : "☆"); }
@@ -724,8 +869,7 @@
 
   document.getElementById("practiceBtn").addEventListener("click", function(){
     getCtx();
-    var raw = localStorage.getItem(LAST_MISSED_KEY);
-    var missed = raw ? JSON.parse(raw) : [];
+    var missed = loadLastMissed();
     if(missed.length){
       startQuiz(missed.map(function(m){ return {a:m.a, b:m.b}; }), true);
     }
@@ -734,6 +878,26 @@
   document.getElementById("muteBtn").addEventListener("click", function(){
     setMuted(!isMuted());
     renderMuteBtn();
+  });
+
+  document.getElementById("nameGoBtn").addEventListener("click", function(){
+    chooseProfile(document.getElementById("nameInput").value);
+  });
+  document.getElementById("nameInput").addEventListener("keydown", function(e){
+    if(e.key === "Enter") chooseProfile(this.value);
+  });
+
+  document.getElementById("switchProfileBtn").addEventListener("click", function(){
+    localStorage.removeItem(ACTIVE_KEY);
+    location.reload();
+  });
+
+  document.getElementById("adminBtn").addEventListener("click", function(){
+    renderAdmin();
+    showScreen("admin");
+  });
+  document.getElementById("adminBackBtn").addEventListener("click", function(){
+    showScreen("home");
   });
 
   document.getElementById("keypad").addEventListener("click", function(e){
@@ -750,8 +914,13 @@
   });
 
   // ---------- Init ----------
-  renderHome();
-  showScreen("home");
+  if(activeProfile){
+    renderHome();
+    showScreen("home");
+  } else {
+    renderNameScreen();
+    showScreen("name");
+  }
 })();
 </script>
 </body>
