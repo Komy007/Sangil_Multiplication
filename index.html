@@ -77,6 +77,37 @@
   #screen-quiz{display:none;}
   #screen-result{display:none;}
   #screen-admin{display:none;}
+  #screen-division{display:none;}
+  #screen-gameselect{display:none;}
+  #screen-breakout{display:none;}
+
+  .levelToggle{display:flex; gap:10px;}
+  .levelBtn{
+    flex:1; background:var(--card2); border:2px solid transparent; border-radius:14px;
+    padding:12px 6px; color:#fff; font-weight:700; cursor:pointer; text-align:center; font-size:.9rem;
+  }
+  .levelBtn.active{border-color:var(--accent2); background:linear-gradient(135deg, var(--accent2), var(--accent));}
+  .longDiv{
+    display:flex; align-items:flex-start; justify-content:center; gap:16px;
+    font-family:"Courier New", monospace; font-weight:800; margin:20px 0 10px;
+  }
+  .ldDividend{font-size:3rem; padding-right:16px; border-right:4px solid #fff; min-width:1.4em; text-align:right;}
+  .ldRight{display:flex; flex-direction:column; align-items:center; min-width:70px;}
+  .ldDivisor{font-size:3rem;}
+  .ldLine{width:100%; border-top:4px solid #fff; margin:6px 0;}
+  .ldQuotient{font-size:3rem; color:var(--accent2); min-height:1.2em;}
+  .ldSlot{display:inline-block; min-width:1.1ch; border-bottom:3px solid transparent;}
+  .ldSlot.active{border-bottom-color:var(--yellow); color:var(--yellow);}
+  .tfRow{display:flex; gap:14px; margin-top:8px;}
+  .tfBtn{
+    flex:1; border:none; border-radius:18px; padding:24px 0; font-size:2rem; font-weight:900;
+    cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.3); color:#fff;
+  }
+  .tfBtn.true{background:linear-gradient(135deg, var(--green), #1fae63);}
+  .tfBtn.false{background:linear-gradient(135deg, var(--red), #d43a5c);}
+  .tfBtn:active{transform:translateY(3px); box-shadow:none;}
+  .gameChoiceBtn{font-size:1.4rem;}
+  .livesRow{font-size:1.2rem; margin:4px 0;}
 
   .nameInput{
     width:100%; padding:16px; border-radius:14px; border:none; font-size:1.1rem;
@@ -99,7 +130,7 @@
 
   #screen-tetris{display:none;}
   .tetrisCanvasWrap{position:relative; display:flex; justify-content:center;}
-  #tetrisCanvas{background:#0c0e2e; border-radius:12px; touch-action:none; max-width:100%;}
+  #tetrisCanvas, #brkCanvas{background:#0c0e2e; border-radius:12px; touch-action:none; max-width:100%;}
   .tetrisOverOverlay{
     display:none; position:absolute; inset:0; background:rgba(11,13,42,.9);
     border-radius:12px; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:16px;
@@ -184,6 +215,8 @@
     .questionText{font-size:2.6rem;}
     .heatcell{font-size:.5rem;}
     h1{font-size:1.2rem;}
+    .ldDividend, .ldDivisor, .ldQuotient{font-size:2.2rem;}
+    .tfBtn{font-size:1.5rem; padding:18px 0;}
   }
 </style>
 </head>
@@ -226,6 +259,7 @@
 
     <button class="bigBtn" id="startTestBtn">START TEST 🚀</button>
     <button class="secondaryBtn" id="practiceBtn" style="display:none;">Practice Missed Ones 🔁</button>
+    <button class="secondaryBtn" id="divisionBtn">Division Practice ➗</button>
   </div>
 
   <div id="screen-quiz">
@@ -252,6 +286,10 @@
       <button class="key" data-k="0">0</button>
       <button class="key confirm" data-k="ok">✓</button>
     </div>
+    <div class="tfRow" id="tfRow" style="display:none;">
+      <button class="tfBtn true" id="tfTrueBtn">✓ True</button>
+      <button class="tfBtn false" id="tfFalseBtn">✗ False</button>
+    </div>
   </div>
 
   <div id="screen-result">
@@ -263,7 +301,7 @@
       <div class="sectionTitle" id="missedTitle" style="text-align:center;">Let's review these:</div>
       <div class="missedGrid" id="missedGrid"></div>
     </div>
-    <button class="bigBtn" id="tetrisBonusBtn" style="display:none;">🎮 Play Tetris Bonus (2 min)!</button>
+    <button class="bigBtn" id="bonusBtn" style="display:none;">🎮 Bonus Game (2 min)!</button>
     <button class="secondaryBtn" id="practiceMissedFromResult" style="display:none;">Practice Missed Ones 🔁</button>
     <button class="bigBtn" id="newTestBtn">New Test 🚀</button>
   </div>
@@ -277,6 +315,69 @@
     <div id="adminList"></div>
   </div>
 
+  <div id="screen-division">
+    <div class="topbar">
+      <button class="muteBtn" id="divBackBtn">←</button>
+      <h1>➗ Division Practice</h1>
+      <div style="width:44px;"></div>
+    </div>
+
+    <div id="divisionIntro">
+      <div class="card">
+        <div class="sectionTitle">Choose Your Level</div>
+        <div class="levelToggle">
+          <button class="levelBtn active" id="divLevel1Btn">Level 1<br><span style="font-weight:400;font-size:.75rem;">Basic</span></button>
+          <button class="levelBtn" id="divLevel2Btn">Level 2<br><span style="font-weight:400;font-size:.75rem;">With Remainder</span></button>
+        </div>
+      </div>
+      <button class="bigBtn" id="divStartBtn">START DIVISION 🚀</button>
+    </div>
+
+    <div id="divisionQuiz" style="display:none;">
+      <div class="quizTop">
+        <span id="divProgressLabel">Passed 0 / 10</span>
+        <span id="divStreakLabel">⭐ 0</span>
+      </div>
+      <div class="questionCard" id="divQuestionCard">
+        <div class="longDiv">
+          <div class="ldDividend" id="ldDividend">56</div>
+          <div class="ldRight">
+            <div class="ldDivisor" id="ldDivisor">8</div>
+            <div class="ldLine"></div>
+            <div class="ldQuotient">
+              <span id="ldQVal" class="ldSlot">?</span><span id="ldRWrap" style="display:none;"> r <span id="ldRVal" class="ldSlot">?</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="feedbackText" id="divFeedbackText">&nbsp;</div>
+      </div>
+      <div class="keypad" id="divKeypad">
+        <button class="key" data-k="1">1</button>
+        <button class="key" data-k="2">2</button>
+        <button class="key" data-k="3">3</button>
+        <button class="key" data-k="4">4</button>
+        <button class="key" data-k="5">5</button>
+        <button class="key" data-k="6">6</button>
+        <button class="key" data-k="7">7</button>
+        <button class="key" data-k="8">8</button>
+        <button class="key" data-k="9">9</button>
+        <button class="key back" data-k="back">⌫</button>
+        <button class="key" data-k="0">0</button>
+        <button class="key confirm" data-k="ok">✓</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-gameselect">
+    <div class="topbar">
+      <div style="width:44px;"></div>
+      <h1>🎮 Choose Your Bonus Game!</h1>
+      <div style="width:44px;"></div>
+    </div>
+    <button class="bigBtn gameChoiceBtn" id="chooseTetrisBtn">🧱 Tetris</button>
+    <button class="bigBtn gameChoiceBtn" id="chooseBreakoutBtn">🎾 Brick Breaker</button>
+  </div>
+
   <div id="screen-tetris">
     <div class="topbar">
       <div style="width:44px;"></div>
@@ -287,7 +388,7 @@
       <div id="tetrisTimer" style="font-size:1.3rem; font-weight:800;">⏱ 2:00</div>
       <div id="tetrisScore" style="font-size:1rem; opacity:.85; margin:4px 0 10px;">Score: 0</div>
       <div class="tetrisCanvasWrap">
-        <canvas id="tetrisCanvas" width="240" height="480"></canvas>
+        <canvas id="tetrisCanvas" width="270" height="540"></canvas>
         <div class="tetrisOverOverlay" id="tetrisOverOverlay">
           <div style="font-size:1.6rem; font-weight:900;">⏰ Time's Up!</div>
           <div id="tetrisFinalScore" style="margin:10px 0; font-size:1.1rem;"></div>
@@ -301,6 +402,31 @@
       <button class="key" id="tRight">➡️</button>
       <button class="key" id="tDown">⬇️</button>
       <button class="key confirm" id="tDrop" style="grid-column:span 2;">⏬ Drop</button>
+    </div>
+  </div>
+
+  <div id="screen-breakout">
+    <div class="topbar">
+      <div style="width:44px;"></div>
+      <h1>🎾 Bonus Brick Breaker!</h1>
+      <div style="width:44px;"></div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div id="brkTimer" style="font-size:1.3rem; font-weight:800;">⏱ 2:00</div>
+      <div id="brkScore" style="font-size:1rem; opacity:.85; margin:4px 0;">Score: 0</div>
+      <div class="livesRow" id="brkLives">❤️❤️❤️</div>
+      <div class="tetrisCanvasWrap">
+        <canvas id="brkCanvas" width="300" height="440"></canvas>
+        <div class="tetrisOverOverlay" id="brkOverOverlay">
+          <div style="font-size:1.6rem; font-weight:900;">⏰ Time's Up!</div>
+          <div id="brkFinalScore" style="margin:10px 0; font-size:1.1rem;"></div>
+          <button class="bigBtn" id="brkBackBtn" style="width:80%;">Back to Home 🏠</button>
+        </div>
+      </div>
+    </div>
+    <div class="tetrisControls" style="grid-template-columns:repeat(2,1fr);">
+      <button class="key" id="brkLeftBtn">⬅️</button>
+      <button class="key" id="brkRightBtn">➡️</button>
     </div>
   </div>
 
@@ -377,6 +503,34 @@
     return raw ? JSON.parse(raw) : [];
   }
   function saveHistoryFor(profile, hist){ localStorage.setItem(nsKey("history", profile), JSON.stringify(hist)); }
+
+  function getAndIncrementPerfectCount(){
+    var raw = localStorage.getItem(nsKey("perfectToday", activeProfile));
+    var p = raw ? JSON.parse(raw) : {date: todayStr(), count:0};
+    if(p.date !== todayStr()){ p = {date: todayStr(), count:0}; }
+    p.count++;
+    localStorage.setItem(nsKey("perfectToday", activeProfile), JSON.stringify(p));
+    return p.count;
+  }
+  function minutesForCount(n){
+    if(n <= 1) return 2;
+    if(n === 2) return 3;
+    return 5;
+  }
+
+  function loadDivStatsFor(profile){
+    var raw = localStorage.getItem(nsKey("divStats", profile));
+    return raw ? JSON.parse(raw) : {l1:{attempts:0,correct:0}, l2:{attempts:0,correct:0}};
+  }
+  function saveDivStatsFor(profile, s){ localStorage.setItem(nsKey("divStats", profile), JSON.stringify(s)); }
+  function loadDivHistoryFor(profile){
+    var raw = localStorage.getItem(nsKey("divHistory", profile));
+    return raw ? JSON.parse(raw) : [];
+  }
+  function saveDivHistoryFor(profile, hist){ localStorage.setItem(nsKey("divHistory", profile), JSON.stringify(hist)); }
+
+  var divStats = activeProfile ? loadDivStatsFor(activeProfile) : {l1:{attempts:0,correct:0}, l2:{attempts:0,correct:0}};
+  function saveDivStats(){ if(activeProfile) saveDivStatsFor(activeProfile, divStats); }
 
   function isMuted(){ return localStorage.getItem(MUTE_KEY) === "true"; }
   function setMuted(v){ localStorage.setItem(MUTE_KEY, v ? "true" : "false"); }
@@ -460,8 +614,21 @@
     window.speechSynthesis.speak(u);
   }
 
-  var PRAISES = ["Great job!","Awesome!","You got it!","Brilliant!","Super smart!","Fantastic!","You're on fire!","Perfect!"];
+  var PRAISES = ["Great job!","Awesome!","You got it!","Brilliant!","Super smart!","Fantastic!","You're on fire!","Perfect!",
+    "Amazing, Sangil!","You're a math star!","Incredible!","Boom! Nailed it!","Genius mode ON!","Rocket speed!",
+    "That was lightning fast!","High five!","Unstoppable!","Math wizard!","Champion!","Superb!","Way to go!","Excellent!"];
   var ENCOURAGE = ["Hmm, think again!","Almost! Try once more!","Give it another try!","You can do it!","So close, try again!"];
+  var COMBO3 = ["🔥 Three in a row!","🔥 Triple streak!","🔥 On fire, three straight!"];
+  var COMBO5 = ["⚡ You're on a streak!","⚡ Five straight! Amazing!","⚡ Streak of five!"];
+  var COMBO10 = ["🏆 TEN in a row?! LEGENDARY!","🏆 10 straight! You're unstoppable!","🏆 LEGENDARY streak of 10!"];
+
+  var lastPraise = null;
+  function randomFromExcluding(arr, exclude){
+    if(arr.length <= 1) return arr[0];
+    var pick;
+    do { pick = randomFrom(arr); } while(pick === exclude);
+    return pick;
+  }
 
   function randomFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
   function numberWord(n){
@@ -581,8 +748,8 @@
 
   function starsFor(score, total){
     if(score === total) return 3;
-    if(score >= 18) return 2;
-    if(score >= 15) return 1;
+    if(score/total >= 0.9) return 2;
+    if(score/total >= 0.75) return 1;
     return 0;
   }
 
@@ -609,6 +776,12 @@
         return '<div class="historyRow"><span>' + h.date + '</span><span>' + h.score + ' / ' + h.total + '</span><span>' + starStr + '</span></div>';
       }).join("");
 
+      var ds = loadDivStatsFor(name);
+      var dHist = loadDivHistoryFor(name);
+      var divHistRows = dHist.slice(-5).reverse().map(function(h){
+        return '<div class="historyRow"><span>' + h.date + ' (L' + h.level + ')</span><span>' + h.score + ' / ' + h.total + '</span></div>';
+      }).join("");
+
       var card = document.createElement("div");
       card.className = "card";
       card.innerHTML =
@@ -617,7 +790,10 @@
         '<div class="progressWrap"><div class="progressBar" style="width:' + Math.round(masteredCount/72*100) + '%"></div></div>' +
         '<div class="progressLabel">Mastered: ' + masteredCount + ' / 72</div>' +
         (lastTest ? '<div class="progressLabel">Last test: ' + lastTest.date + ' — ' + lastTest.score + ' / ' + lastTest.total + '</div>' : '<div class="progressLabel">No tests yet.</div>') +
-        (historyRows ? '<div class="sectionTitle" style="margin-top:10px;">Recent Tests</div><div class="historyList">' + historyRows + '</div>' : '');
+        (historyRows ? '<div class="sectionTitle" style="margin-top:10px;">Recent Tests</div><div class="historyList">' + historyRows + '</div>' : '') +
+        '<div class="sectionTitle" style="margin-top:10px;">➗ Division</div>' +
+        '<div class="progressLabel">L1: ' + ds.l1.correct + '/' + ds.l1.attempts + ' correct &nbsp;|&nbsp; L2: ' + ds.l2.correct + '/' + ds.l2.attempts + ' correct</div>' +
+        (divHistRows ? '<div class="historyList">' + divHistRows + '</div>' : '<div class="progressLabel">No division sessions yet.</div>');
       container.appendChild(card);
     });
   }
@@ -641,11 +817,14 @@
     document.getElementById("screen-quiz").style.display = name === "quiz" ? "block" : "none";
     document.getElementById("screen-result").style.display = name === "result" ? "block" : "none";
     document.getElementById("screen-admin").style.display = name === "admin" ? "block" : "none";
+    document.getElementById("screen-division").style.display = name === "division" ? "block" : "none";
+    document.getElementById("screen-gameselect").style.display = name === "gameselect" ? "block" : "none";
     document.getElementById("screen-tetris").style.display = name === "tetris" ? "block" : "none";
+    document.getElementById("screen-breakout").style.display = name === "breakout" ? "block" : "none";
   }
 
   // ---------- Tetris bonus game ----------
-  var T_COLS = 10, T_ROWS = 20, T_BLOCK = 24;
+  var T_COLS = 10, T_ROWS = 20, T_BLOCK = 27;
   var TETROMINOES = {
     I:{matrix:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], color:"#00d4ff"},
     O:{matrix:[[1,1],[1,1]], color:"#ffd166"},
@@ -826,14 +1005,14 @@
     speak("Time's up! Great playing!");
   }
 
-  function startTetris(){
+  function startTetris(seconds){
     tetris = {
       board: tMakeEmptyBoard(),
       score: 0,
-      dropInterval: 500,
+      dropInterval: 650,
       lastDrop: Date.now(),
       running: true,
-      timerSec: 120,
+      timerSec: seconds,
       rafHandle: null,
       timerHandle: null
     };
@@ -881,7 +1060,7 @@
 
   function startQuiz(facts, practiceMode){
     quiz = {
-      queue: facts.map(function(f){ return {a:f.a, b:f.b}; }),
+      queue: facts.map(function(f){ return {a:f.a, b:f.b, forceBasic:false}; }),
       originalCount: facts.length,
       passedCount: 0,
       firstAppearanceSeen: {},
@@ -892,7 +1071,8 @@
       inputStr: "",
       qStartTime: 0,
       locked: false,
-      practiceMode: !!practiceMode
+      practiceMode: !!practiceMode,
+      currentQ: null
     };
     showScreen("quiz");
     nextQuestion();
@@ -906,6 +1086,59 @@
     document.getElementById("quizStreakLabel").textContent = "⭐ " + quiz.streak;
   }
 
+  function pickFormat(){
+    var r = Math.random();
+    if(r < 0.50) return "basic";
+    if(r < 0.75) return "missing";
+    if(r < 0.90) return "truefalse";
+    return "reverse";
+  }
+
+  function buildQuestion(f, forceBasic){
+    var a = f.a, b = f.b, product = a*b;
+    var format = forceBasic ? "basic" : pickFormat();
+    var q = {format:format, a:a, b:b, product:product};
+    if(format === "basic"){
+      q.text = a + " × " + b + " = ?";
+      q.answer = product;
+      q.inputType = "number";
+    } else if(format === "missing"){
+      if(Math.random() < 0.5){
+        q.text = a + " × ? = " + product;
+        q.answer = b;
+      } else {
+        q.text = "? × " + b + " = " + product;
+        q.answer = a;
+      }
+      q.inputType = "number";
+    } else if(format === "reverse"){
+      q.text = product + " = ? × " + b;
+      q.answer = a;
+      q.inputType = "number";
+    } else {
+      var isTrue = Math.random() < 0.5;
+      var shown = product;
+      if(!isTrue){
+        var wrong = null;
+        if(Math.random() < 0.3){
+          var bb = b + (Math.random() < 0.5 ? 1 : -1);
+          if(bb >= 1 && bb <= 9 && a*bb !== product) wrong = a*bb;
+        }
+        if(wrong === null){
+          var deltas = [-3,-2,-1,1,2,3];
+          var pick = randomFrom(deltas);
+          wrong = product + pick;
+          if(wrong <= 0) wrong = product + Math.abs(pick) + 1;
+        }
+        shown = wrong;
+      }
+      q.text = a + " × " + b + " = " + shown;
+      q.answer = isTrue;
+      q.inputType = "boolean";
+    }
+    return q;
+  }
+
   function nextQuestion(){
     if(!quiz.queue.length){
       endQuiz();
@@ -914,12 +1147,16 @@
     quiz.attemptNum = 1;
     quiz.inputStr = "";
     quiz.locked = false;
-    var f = currentFact();
-    document.getElementById("questionText").textContent = f.a + " × " + f.b + " = ?";
+    var item = currentFact();
+    quiz.currentQ = buildQuestion({a:item.a, b:item.b}, item.forceBasic || quiz.practiceMode);
+    document.getElementById("questionText").textContent = quiz.currentQ.text;
     document.getElementById("answerDisplay").textContent = " ";
     document.getElementById("feedbackText").textContent = " ";
     document.getElementById("feedbackText").className = "feedbackText";
     document.getElementById("questionCard").className = "questionCard";
+    var isTF = quiz.currentQ.inputType === "boolean";
+    document.getElementById("keypad").style.display = isTF ? "none" : "grid";
+    document.getElementById("tfRow").style.display = isTF ? "flex" : "none";
     updateQuizTop();
     quiz.qStartTime = Date.now();
   }
@@ -930,6 +1167,7 @@
 
   function handleKey(k){
     if(quiz.locked) return;
+    if(quiz.currentQ && quiz.currentQ.inputType === "boolean") return;
     if(k === "back"){
       playClickSound(k);
       quiz.inputStr = quiz.inputStr.slice(0, -1);
@@ -944,27 +1182,36 @@
   }
 
   function submitAnswer(){
+    if(quiz.locked) return;
     if(quiz.inputStr === "") return;
-    var f = currentFact();
-    var correctAnswer = f.a * f.b;
     var given = parseInt(quiz.inputStr, 10);
+    processAnswer(given === quiz.currentQ.answer);
+  }
+
+  function submitBoolAnswer(val){
+    if(quiz.locked) return;
+    playClickSound("ok");
+    processAnswer(val === quiz.currentQ.answer);
+  }
+
+  function processAnswer(isCorrect){
     var elapsed = Date.now() - quiz.qStartTime;
+    var f = currentFact();
     var isFirstAppearance = !quiz.firstAppearanceSeen[factKey(f)];
     if(isFirstAppearance) quiz.firstAppearanceSeen[factKey(f)] = true;
-
-    var isCorrect = given === correctAnswer;
     quiz.locked = true;
 
     if(isCorrect){
       onCorrectAnswer(f, isFirstAppearance, elapsed);
     } else {
-      onWrongAnswer(f, isFirstAppearance, correctAnswer);
+      onWrongAnswer(f, isFirstAppearance);
     }
   }
 
   function onCorrectAnswer(f, isFirstAppearance, elapsed){
     playCorrectSound();
-    var praise = randomFrom(PRAISES);
+    var praise = randomFromExcluding(PRAISES, lastPraise);
+    lastPraise = praise;
     var fastBonus = elapsed < 3000;
     speak(praise);
 
@@ -977,9 +1224,10 @@
       recordFactResult(f, true);
       if(isFirstAppearance) quiz.firstAppearanceCorrect[factKey(f)] = true;
       quiz.streak++;
-      if(quiz.streak > 0 && quiz.streak % 3 === 0){
-        showComboPopup("🔥 " + quiz.streak + " in a row!");
-      }
+      if(quiz.streak === 3){ showComboPopup(randomFrom(COMBO3)); }
+      else if(quiz.streak === 5){ showComboPopup(randomFrom(COMBO5)); }
+      else if(quiz.streak === 10){ showComboPopup(randomFrom(COMBO10)); }
+      else if(quiz.streak > 10 && quiz.streak % 5 === 0){ showComboPopup("🔥 " + quiz.streak + " in a row!"); }
     } else {
       recordFactResult(f, true);
       quiz.streak = 0;
@@ -994,15 +1242,16 @@
     }, 700);
   }
 
-  function onWrongAnswer(f, isFirstAppearance, correctAnswer){
+  function onWrongAnswer(f, isFirstAppearance){
     var fbEl = document.getElementById("feedbackText");
     document.getElementById("questionCard").className = "questionCard shakeWrong";
     quiz.streak = 0;
+    var product = quiz.currentQ.product;
 
     if(quiz.attemptNum === 1){
       if(isFirstAppearance){
         quiz.firstAppearanceCorrect[factKey(f)] = false;
-        quiz.wrongFactsMap[factKey(f)] = {a:f.a, b:f.b, answer:correctAnswer};
+        quiz.wrongFactsMap[factKey(f)] = {a:f.a, b:f.b, answer:product};
       }
       playWrongSound();
       var enc = randomFrom(ENCOURAGE);
@@ -1016,15 +1265,15 @@
     } else {
       playWrongSound();
       recordFactResult(f, false);
-      quiz.wrongFactsMap[factKey(f)] = {a:f.a, b:f.b, answer:correctAnswer};
-      var sentence = f.a + " times " + f.b + " is " + correctAnswer + ". Let's remember it!";
+      quiz.wrongFactsMap[factKey(f)] = {a:f.a, b:f.b, answer:product};
+      var sentence = f.a + " times " + f.b + " is " + product + ". Let's remember it!";
       speak(sentence);
       fbEl.className = "feedbackText bad";
-      document.getElementById("answerDisplay").textContent = f.a + " × " + f.b + " = " + correctAnswer;
-      fbEl.textContent = "The answer is " + correctAnswer + ". Let's try it again later!";
+      document.getElementById("answerDisplay").textContent = f.a + " × " + f.b + " = " + product;
+      fbEl.textContent = "The answer is " + f.a + " × " + f.b + " = " + product + ". Let's try it again later!";
 
       quiz.queue.shift();
-      quiz.queue.push({a:f.a, b:f.b});
+      quiz.queue.push({a:f.a, b:f.b, forceBasic:true});
 
       setTimeout(function(){
         nextQuestion();
@@ -1057,11 +1306,17 @@
     if(hist.length > 50) hist.shift();
     saveHistoryFor(activeProfile, hist);
 
-    renderResult(correctFirstTry, quiz.originalCount, missedList);
+    renderResult("mult", correctFirstTry, quiz.originalCount, missedList, null);
     showScreen("result");
   }
 
-  function renderResult(score, total, missedList){
+  var lastResultMode = "mult";
+  var lastResultLevel = null;
+  var currentBonusMinutes = 2;
+
+  function renderResult(mode, score, total, missedList, level){
+    lastResultMode = mode;
+    lastResultLevel = level;
     var stars = starsFor(score, total);
     var label = stars === 3 ? "PERFECT!" : stars === 2 ? "Awesome work!" : stars === 1 ? "Nice try!" : "Keep practicing!";
 
@@ -1071,15 +1326,20 @@
     document.getElementById("scoreText").textContent = score + " / " + total;
 
     var banner = document.getElementById("perfectBanner");
+    var bonusBtn = document.getElementById("bonusBtn");
     if(score === total){
       banner.innerHTML = '<div class="perfectBanner">🏆 PERFECT SCORE, SANGIL! 🏆</div>';
       launchConfetti(60);
       playFanfare();
       speak("PERFECT SCORE, SANGIL!");
+      var count = getAndIncrementPerfectCount();
+      currentBonusMinutes = minutesForCount(count);
+      bonusBtn.textContent = "🎮 Bonus Game (" + currentBonusMinutes + " min)!";
+      bonusBtn.style.display = "block";
     } else {
       banner.textContent = label;
+      bonusBtn.style.display = "none";
     }
-    document.getElementById("tetrisBonusBtn").style.display = score === total ? "block" : "none";
 
     var missedGrid = document.getElementById("missedGrid");
     missedGrid.innerHTML = "";
@@ -1090,18 +1350,425 @@
       missedList.forEach(function(m){
         var card = document.createElement("div");
         card.className = "missedCard";
-        card.textContent = m.a + " × " + m.b + " = " + m.answer;
+        if(mode === "div"){
+          card.textContent = m.dividend + " ÷ " + m.divisor + " = " + m.quotient + (m.level === 2 ? " r " + m.remainder : "");
+        } else {
+          card.textContent = m.a + " × " + m.b + " = " + m.answer;
+        }
         missedGrid.appendChild(card);
       });
     }
 
     document.getElementById("practiceMissedFromResult").style.display = missedList.length > 0 ? "block" : "none";
     document.getElementById("practiceMissedFromResult").onclick = function(){
-      startQuiz(missedList.map(function(m){ return {a:m.a, b:m.b}; }), true);
+      if(mode === "div"){
+        startDivQuiz(missedList, level, true);
+      } else {
+        startQuiz(missedList.map(function(m){ return {a:m.a, b:m.b}; }), true);
+      }
     };
 
-    renderHeatmap();
-    renderToday();
+    if(mode === "mult"){
+      renderHeatmap();
+      renderToday();
+    }
+  }
+
+  // ---------- Division practice ----------
+  var divQuiz = null;
+  var divLevelSelected = 1;
+
+  function genDivFactsL1(n){
+    var pool = [];
+    for(var q=2; q<=9; q++){
+      for(var d=2; d<=9; d++){ pool.push({divisor:d, quotient:q}); }
+    }
+    pool = shuffle(pool);
+    var selected = pool.slice(0, n).map(function(x){
+      return {divisor:x.divisor, quotient:x.quotient, remainder:0, dividend:x.divisor*x.quotient};
+    });
+    return shuffle(selected);
+  }
+
+  function genDivFactsL2(n){
+    var list = [];
+    for(var i=0;i<n;i++){
+      var divisor, quotient, remainder, dividend;
+      do {
+        divisor = 2 + Math.floor(Math.random()*8);
+        quotient = 2 + Math.floor(Math.random()*11);
+        remainder = 1 + Math.floor(Math.random()*(divisor-1));
+        dividend = divisor*quotient + remainder;
+      } while(dividend < 10 || dividend > 99);
+      list.push({divisor:divisor, quotient:quotient, remainder:remainder, dividend:dividend});
+    }
+    return list;
+  }
+
+  function startDivQuiz(items, level, practiceMode){
+    divQuiz = {
+      queue: items.map(function(x){ return {divisor:x.divisor, quotient:x.quotient, remainder:x.remainder, dividend:x.dividend}; }),
+      originalCount: items.length,
+      passedCount: 0,
+      level: level,
+      streak: 0,
+      attemptNum: 1,
+      stage: "quotient",
+      inputStr: "",
+      qStartTime: 0,
+      locked: false,
+      practiceMode: !!practiceMode,
+      correctFirstTry: 0,
+      wrongList: []
+    };
+    document.getElementById("divisionIntro").style.display = "none";
+    document.getElementById("divisionQuiz").style.display = "block";
+    showScreen("division");
+    divNextQuestion();
+  }
+
+  function divCurrent(){ return divQuiz.queue[0]; }
+
+  function divUpdateTop(){
+    document.getElementById("divProgressLabel").textContent = "Passed " + divQuiz.passedCount + " / " + divQuiz.originalCount;
+    document.getElementById("divStreakLabel").textContent = "⭐ " + divQuiz.streak;
+  }
+
+  function divNextQuestion(){
+    if(!divQuiz.queue.length){
+      endDivQuiz();
+      return;
+    }
+    divQuiz.attemptNum = 1;
+    divQuiz.stage = "quotient";
+    divQuiz.inputStr = "";
+    divQuiz.locked = false;
+    var f = divCurrent();
+    document.getElementById("ldDividend").textContent = f.dividend;
+    document.getElementById("ldDivisor").textContent = f.divisor;
+    document.getElementById("ldQVal").textContent = "?";
+    document.getElementById("ldQVal").className = "ldSlot active";
+    document.getElementById("ldRWrap").style.display = divQuiz.level === 2 ? "inline" : "none";
+    if(divQuiz.level === 2){
+      document.getElementById("ldRVal").textContent = "?";
+      document.getElementById("ldRVal").className = "ldSlot";
+    }
+    document.getElementById("divFeedbackText").textContent = " ";
+    document.getElementById("divFeedbackText").className = "feedbackText";
+    document.getElementById("divQuestionCard").className = "questionCard";
+    divUpdateTop();
+    divQuiz.qStartTime = Date.now();
+  }
+
+  function divUpdateInputDisplay(){
+    var el = divQuiz.stage === "quotient" ? document.getElementById("ldQVal") : document.getElementById("ldRVal");
+    el.textContent = divQuiz.inputStr.length ? divQuiz.inputStr : "?";
+  }
+
+  function divHandleKey(k){
+    if(divQuiz.locked) return;
+    if(k === "back"){
+      playClickSound(k);
+      divQuiz.inputStr = divQuiz.inputStr.slice(0, -1);
+      divUpdateInputDisplay();
+    } else if(k === "ok"){
+      divSubmit();
+    } else {
+      playClickSound(k);
+      if(divQuiz.inputStr.length < 3) divQuiz.inputStr += k;
+      divUpdateInputDisplay();
+    }
+  }
+
+  function divSubmit(){
+    if(divQuiz.inputStr === "") return;
+    var f = divCurrent();
+    var given = parseInt(divQuiz.inputStr, 10);
+
+    if(divQuiz.level === 1){
+      divProcessResult(given === f.quotient);
+      return;
+    }
+
+    if(divQuiz.stage === "quotient"){
+      if(given === f.quotient){
+        document.getElementById("ldQVal").textContent = given;
+        document.getElementById("ldQVal").className = "ldSlot";
+        document.getElementById("ldRVal").className = "ldSlot active";
+        divQuiz.stage = "remainder";
+        divQuiz.inputStr = "";
+        playClickSound("ok");
+      } else {
+        divProcessResult(false);
+      }
+    } else {
+      divProcessResult(given === f.remainder);
+    }
+  }
+
+  function divProcessResult(isCorrect){
+    var elapsed = Date.now() - divQuiz.qStartTime;
+    divQuiz.locked = true;
+    if(isCorrect) divOnCorrect(elapsed);
+    else divOnWrong();
+  }
+
+  function divOnCorrect(elapsed){
+    playCorrectSound();
+    var praise = randomFromExcluding(PRAISES, lastPraise);
+    lastPraise = praise;
+    var fastBonus = elapsed < 4000;
+    speak(praise);
+    var fbEl = document.getElementById("divFeedbackText");
+    fbEl.className = "feedbackText good";
+    fbEl.innerHTML = "⭐ " + praise + (fastBonus ? ' <span class="fastBadge">⚡ Fast!</span>' : "");
+    document.getElementById("divQuestionCard").className = "questionCard pulseRight";
+
+    var levelKey = divQuiz.level === 1 ? "l1" : "l2";
+    divStats[levelKey].attempts++;
+    divStats[levelKey].correct++;
+    saveDivStats();
+
+    if(divQuiz.attemptNum === 1){
+      divQuiz.correctFirstTry++;
+      divQuiz.streak++;
+      if(divQuiz.streak === 3){ showComboPopup(randomFrom(COMBO3)); }
+      else if(divQuiz.streak === 5){ showComboPopup(randomFrom(COMBO5)); }
+      else if(divQuiz.streak === 10){ showComboPopup(randomFrom(COMBO10)); }
+    } else {
+      divQuiz.streak = 0;
+    }
+
+    divQuiz.queue.shift();
+    divQuiz.passedCount++;
+    divUpdateTop();
+
+    setTimeout(function(){ divNextQuestion(); }, 700);
+  }
+
+  function divOnWrong(){
+    var f = divCurrent();
+    var fbEl = document.getElementById("divFeedbackText");
+    document.getElementById("divQuestionCard").className = "questionCard shakeWrong";
+    divQuiz.streak = 0;
+    playWrongSound();
+
+    if(divQuiz.attemptNum === 1){
+      divQuiz.attemptNum = 2;
+      divQuiz.stage = "quotient";
+      divQuiz.inputStr = "";
+      document.getElementById("ldQVal").textContent = "?";
+      document.getElementById("ldQVal").className = "ldSlot active";
+      if(divQuiz.level === 2){
+        document.getElementById("ldRVal").textContent = "?";
+        document.getElementById("ldRVal").className = "ldSlot";
+      }
+      var enc = randomFrom(ENCOURAGE);
+      speak(enc);
+      fbEl.className = "feedbackText bad";
+      fbEl.textContent = "❌ " + enc;
+      setTimeout(function(){ divQuiz.locked = false; }, 500);
+    } else {
+      var levelKey = divQuiz.level === 1 ? "l1" : "l2";
+      divStats[levelKey].attempts++;
+      saveDivStats();
+      divQuiz.wrongList.push({divisor:f.divisor, quotient:f.quotient, remainder:f.remainder, dividend:f.dividend, level:divQuiz.level});
+
+      document.getElementById("ldQVal").textContent = f.quotient;
+      document.getElementById("ldQVal").className = "ldSlot";
+      if(divQuiz.level === 2){
+        document.getElementById("ldRVal").textContent = f.remainder;
+        document.getElementById("ldRVal").className = "ldSlot";
+        var steps = f.divisor + " × " + f.quotient + " = " + (f.divisor*f.quotient) + ",  " + f.dividend + " − " + (f.divisor*f.quotient) + " = " + f.remainder;
+        fbEl.textContent = steps + "  →  Quotient " + f.quotient + ", Remainder " + f.remainder;
+        speak("The quotient is " + f.quotient + " remainder " + f.remainder + ". Let's remember it!");
+      } else {
+        fbEl.textContent = f.dividend + " ÷ " + f.divisor + " = " + f.quotient;
+        speak(f.dividend + " divided by " + f.divisor + " is " + f.quotient + ". Let's remember it!");
+      }
+      fbEl.className = "feedbackText bad";
+
+      divQuiz.queue.shift();
+      divQuiz.queue.push({divisor:f.divisor, quotient:f.quotient, remainder:f.remainder, dividend:f.dividend});
+
+      setTimeout(function(){ divNextQuestion(); }, 2200);
+    }
+  }
+
+  function endDivQuiz(){
+    if(divQuiz.practiceMode){
+      document.getElementById("divisionQuiz").style.display = "none";
+      document.getElementById("divisionIntro").style.display = "block";
+      showScreen("division");
+      return;
+    }
+
+    var hist = loadDivHistoryFor(activeProfile);
+    hist.push({date: todayStr(), level: divQuiz.level, score: divQuiz.correctFirstTry, total: divQuiz.originalCount});
+    if(hist.length > 50) hist.shift();
+    saveDivHistoryFor(activeProfile, hist);
+
+    renderResult("div", divQuiz.correctFirstTry, divQuiz.originalCount, divQuiz.wrongList, divQuiz.level);
+    showScreen("result");
+  }
+
+  // ---------- Breakout bonus game ----------
+  var BRK_W = 300, BRK_H = 440, BRK_ROWS = 6, BRK_COLS = 8;
+  var BRK_ROW_COLORS = ["#ff5c7a","#ff9d5c","#ffd166","#3ddc84","#00d4ff","#7c5cff"];
+  var brk = null;
+  var brkDragging = false;
+  var brkKeys = {left:false, right:false};
+
+  function brkInitBricks(){
+    var bricks = [];
+    var brickW = BRK_W/BRK_COLS;
+    var brickH = 18;
+    for(var r=0;r<BRK_ROWS;r++){
+      for(var c=0;c<BRK_COLS;c++){
+        bricks.push({x:c*brickW, y:r*brickH+30, w:brickW, h:brickH, alive:true, color:BRK_ROW_COLORS[r], score:(BRK_ROWS-r)*10});
+      }
+    }
+    return bricks;
+  }
+
+  function brkResetBallPaddle(){
+    brk.paddle = {w:70, h:12, x:(BRK_W-70)/2, y:BRK_H-24};
+    brk.ball = {x:BRK_W/2, y:BRK_H-40, r:7, dx:(Math.random()<0.5?-1:1)*3, dy:-3.4};
+  }
+
+  function brkPlayTone(freq, dur){
+    if(isMuted()) return;
+    var ctx = getCtx();
+    playTone(freq, ctx.currentTime, dur, "square", 0.08);
+  }
+
+  function brkUpdateTimerDisplay(){
+    var m = Math.floor(brk.timerSec/60), s = brk.timerSec%60;
+    document.getElementById("brkTimer").textContent = "⏱ " + m + ":" + (s<10 ? "0" : "") + s;
+  }
+
+  function brkUpdateLivesDisplay(){
+    var s = "";
+    for(var i=0;i<3;i++){ s += i < brk.lives ? "❤️" : "🖤"; }
+    document.getElementById("brkLives").textContent = s;
+  }
+
+  function brkDraw(){
+    var canvas = document.getElementById("brkCanvas");
+    var ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    brk.bricks.forEach(function(b){
+      if(!b.alive) return;
+      ctx.fillStyle = b.color;
+      ctx.fillRect(b.x+2, b.y+2, b.w-4, b.h-4);
+    });
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(brk.paddle.x, brk.paddle.y, brk.paddle.w, brk.paddle.h);
+    ctx.beginPath();
+    ctx.arc(brk.ball.x, brk.ball.y, brk.ball.r, 0, Math.PI*2);
+    ctx.fillStyle = "#00d4ff";
+    ctx.fill();
+  }
+
+  function brkTick(){
+    if(!brk || !brk.running) return;
+    var b = brk.ball, p = brk.paddle;
+    var dir = brk.paddleDir + (brkKeys.left?-1:0) + (brkKeys.right?1:0);
+    if(dir > 1) dir = 1;
+    if(dir < -1) dir = -1;
+    if(dir !== 0 && !brkDragging) p.x += dir*6;
+    p.x = Math.max(0, Math.min(BRK_W-p.w, p.x));
+
+    b.x += b.dx; b.y += b.dy;
+    if(b.x-b.r < 0){ b.x = b.r; b.dx *= -1; brkPlayTone(440, 0.05); }
+    if(b.x+b.r > BRK_W){ b.x = BRK_W-b.r; b.dx *= -1; brkPlayTone(440, 0.05); }
+    if(b.y-b.r < 0){ b.y = b.r; b.dy *= -1; brkPlayTone(440, 0.05); }
+
+    if(b.y+b.r >= p.y && b.y+b.r <= p.y+p.h+8 && b.x >= p.x && b.x <= p.x+p.w && b.dy > 0){
+      var hitPos = (b.x-(p.x+p.w/2))/(p.w/2);
+      b.dx = hitPos*4.5;
+      b.dy = -Math.abs(b.dy);
+      brkPlayTone(660, 0.07);
+    }
+
+    for(var i=0;i<brk.bricks.length;i++){
+      var brick = brk.bricks[i];
+      if(!brick.alive) continue;
+      if(b.x+b.r > brick.x && b.x-b.r < brick.x+brick.w && b.y+b.r > brick.y && b.y-b.r < brick.y+brick.h){
+        brick.alive = false;
+        b.dy *= -1;
+        brk.score += brick.score;
+        document.getElementById("brkScore").textContent = "Score: " + brk.score;
+        brkPlayTone(880, 0.08);
+        break;
+      }
+    }
+
+    if(b.y-b.r > BRK_H){
+      brk.lives--;
+      brkPlayTone(196, 0.3);
+      if(brk.lives <= 0){
+        brk.lives = 3;
+        brk.bricks = brkInitBricks();
+      }
+      brkUpdateLivesDisplay();
+      brkResetBallPaddle();
+    }
+
+    if(brk.bricks.every(function(x){ return !x.alive; })){
+      brk.score += 200;
+      document.getElementById("brkScore").textContent = "Score: " + brk.score;
+      brk.bricks = brkInitBricks();
+      brkResetBallPaddle();
+      brkPlayTone(1046, 0.2);
+    }
+
+    brkDraw();
+    brk.rafHandle = requestAnimationFrame(brkTick);
+  }
+
+  function endBreakout(){
+    if(!brk) return;
+    brk.running = false;
+    clearInterval(brk.timerHandle);
+    cancelAnimationFrame(brk.rafHandle);
+    document.getElementById("brkFinalScore").textContent = "Score: " + brk.score;
+    document.getElementById("brkOverOverlay").style.display = "flex";
+    speak("Time's up! Great playing!");
+  }
+
+  function startBreakout(seconds){
+    brk = {
+      bricks: brkInitBricks(),
+      score: 0,
+      lives: 3,
+      running: true,
+      paddleDir: 0,
+      timerSec: seconds,
+      rafHandle: null,
+      timerHandle: null
+    };
+    brkResetBallPaddle();
+    document.getElementById("brkScore").textContent = "Score: 0";
+    brkUpdateLivesDisplay();
+    document.getElementById("brkOverOverlay").style.display = "none";
+    showScreen("breakout");
+    brkUpdateTimerDisplay();
+    brk.timerHandle = setInterval(function(){
+      brk.timerSec--;
+      brkUpdateTimerDisplay();
+      if(brk.timerSec <= 0) endBreakout();
+    }, 1000);
+    brk.rafHandle = requestAnimationFrame(brkTick);
+  }
+
+  function brkSetPaddleFromClientX(clientX){
+    if(!brk) return;
+    var canvas = document.getElementById("brkCanvas");
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var x = (clientX - rect.left) * scaleX;
+    brk.paddle.x = Math.max(0, Math.min(BRK_W - brk.paddle.w, x - brk.paddle.w/2));
   }
 
   // ---------- Event wiring ----------
@@ -1111,7 +1778,12 @@
   });
 
   document.getElementById("newTestBtn").addEventListener("click", function(){
-    startQuiz(pickTestFacts(20), false);
+    if(lastResultMode === "div"){
+      var facts = lastResultLevel === 1 ? genDivFactsL1(10) : genDivFactsL2(10);
+      startDivQuiz(facts, lastResultLevel, false);
+    } else {
+      startQuiz(pickTestFacts(20), false);
+    }
   });
 
   document.getElementById("practiceBtn").addEventListener("click", function(){
@@ -1120,6 +1792,43 @@
     if(missed.length){
       startQuiz(missed.map(function(m){ return {a:m.a, b:m.b}; }), true);
     }
+  });
+
+  document.getElementById("tfTrueBtn").addEventListener("click", function(){ submitBoolAnswer(true); });
+  document.getElementById("tfFalseBtn").addEventListener("click", function(){ submitBoolAnswer(false); });
+
+  document.getElementById("divisionBtn").addEventListener("click", function(){
+    divLevelSelected = 1;
+    document.getElementById("divLevel1Btn").className = "levelBtn active";
+    document.getElementById("divLevel2Btn").className = "levelBtn";
+    document.getElementById("divisionIntro").style.display = "block";
+    document.getElementById("divisionQuiz").style.display = "none";
+    showScreen("division");
+  });
+  document.getElementById("divBackBtn").addEventListener("click", function(){
+    divQuiz = null;
+    showScreen("home");
+    renderHome();
+  });
+  document.getElementById("divLevel1Btn").addEventListener("click", function(){
+    divLevelSelected = 1;
+    document.getElementById("divLevel1Btn").className = "levelBtn active";
+    document.getElementById("divLevel2Btn").className = "levelBtn";
+  });
+  document.getElementById("divLevel2Btn").addEventListener("click", function(){
+    divLevelSelected = 2;
+    document.getElementById("divLevel2Btn").className = "levelBtn active";
+    document.getElementById("divLevel1Btn").className = "levelBtn";
+  });
+  document.getElementById("divStartBtn").addEventListener("click", function(){
+    getCtx();
+    var facts = divLevelSelected === 1 ? genDivFactsL1(10) : genDivFactsL2(10);
+    startDivQuiz(facts, divLevelSelected, false);
+  });
+  document.getElementById("divKeypad").addEventListener("click", function(e){
+    var btn = e.target.closest(".key");
+    if(!btn) return;
+    divHandleKey(btn.getAttribute("data-k"));
   });
 
   document.getElementById("muteBtn").addEventListener("click", function(){
@@ -1153,9 +1862,15 @@
     handleKey(btn.getAttribute("data-k"));
   });
 
-  document.getElementById("tetrisBonusBtn").addEventListener("click", function(){
+  document.getElementById("bonusBtn").addEventListener("click", function(){
     getCtx();
-    startTetris();
+    showScreen("gameselect");
+  });
+  document.getElementById("chooseTetrisBtn").addEventListener("click", function(){
+    startTetris(currentBonusMinutes*60);
+  });
+  document.getElementById("chooseBreakoutBtn").addEventListener("click", function(){
+    startBreakout(currentBonusMinutes*60);
   });
   document.getElementById("tLeft").addEventListener("click", function(){ tTryMove(-1, 0); });
   document.getElementById("tRight").addEventListener("click", function(){ tTryMove(1, 0); });
@@ -1167,8 +1882,38 @@
     renderHome();
   });
 
+  document.getElementById("brkLeftBtn").addEventListener("mousedown", function(){ if(brk) brk.paddleDir = -1; });
+  document.getElementById("brkLeftBtn").addEventListener("mouseup", function(){ if(brk) brk.paddleDir = 0; });
+  document.getElementById("brkLeftBtn").addEventListener("mouseleave", function(){ if(brk) brk.paddleDir = 0; });
+  document.getElementById("brkLeftBtn").addEventListener("touchstart", function(e){ e.preventDefault(); if(brk) brk.paddleDir = -1; });
+  document.getElementById("brkLeftBtn").addEventListener("touchend", function(e){ e.preventDefault(); if(brk) brk.paddleDir = 0; });
+  document.getElementById("brkRightBtn").addEventListener("mousedown", function(){ if(brk) brk.paddleDir = 1; });
+  document.getElementById("brkRightBtn").addEventListener("mouseup", function(){ if(brk) brk.paddleDir = 0; });
+  document.getElementById("brkRightBtn").addEventListener("mouseleave", function(){ if(brk) brk.paddleDir = 0; });
+  document.getElementById("brkRightBtn").addEventListener("touchstart", function(e){ e.preventDefault(); if(brk) brk.paddleDir = 1; });
+  document.getElementById("brkRightBtn").addEventListener("touchend", function(e){ e.preventDefault(); if(brk) brk.paddleDir = 0; });
+
+  var brkCanvasEl = document.getElementById("brkCanvas");
+  brkCanvasEl.addEventListener("mousedown", function(e){ brkDragging = true; brkSetPaddleFromClientX(e.clientX); });
+  window.addEventListener("mousemove", function(e){ if(brkDragging) brkSetPaddleFromClientX(e.clientX); });
+  window.addEventListener("mouseup", function(){ brkDragging = false; });
+  brkCanvasEl.addEventListener("touchstart", function(e){ brkDragging = true; brkSetPaddleFromClientX(e.touches[0].clientX); e.preventDefault(); }, {passive:false});
+  brkCanvasEl.addEventListener("touchmove", function(e){ if(brkDragging){ brkSetPaddleFromClientX(e.touches[0].clientX); e.preventDefault(); } }, {passive:false});
+  brkCanvasEl.addEventListener("touchend", function(){ brkDragging = false; });
+
+  document.getElementById("brkBackBtn").addEventListener("click", function(){
+    if(brk) brk.running = false;
+    showScreen("home");
+    renderHome();
+  });
+
   document.addEventListener("keydown", function(e){
     if(document.getElementById("screen-quiz").style.display === "block"){
+      if(quiz.currentQ && quiz.currentQ.inputType === "boolean"){
+        if(e.key === "t" || e.key === "T" || e.key === "1"){ submitBoolAnswer(true); }
+        else if(e.key === "f" || e.key === "F" || e.key === "0"){ submitBoolAnswer(false); }
+        return;
+      }
       if(e.key >= "0" && e.key <= "9"){ handleKey(e.key); }
       else if(e.key === "Backspace"){ handleKey("back"); e.preventDefault(); }
       else if(e.key === "Enter"){ handleKey("ok"); }
@@ -1180,7 +1925,16 @@
       else if(e.key === "ArrowDown"){ tTryMove(0, 1); e.preventDefault(); }
       else if(e.key === "ArrowUp"){ tRotate(); e.preventDefault(); }
       else if(e.key === " "){ tHardDrop(); e.preventDefault(); }
+      return;
     }
+    if(document.getElementById("screen-breakout").style.display === "block"){
+      if(e.key === "ArrowLeft"){ brkKeys.left = true; e.preventDefault(); }
+      else if(e.key === "ArrowRight"){ brkKeys.right = true; e.preventDefault(); }
+    }
+  });
+  document.addEventListener("keyup", function(e){
+    if(e.key === "ArrowLeft") brkKeys.left = false;
+    if(e.key === "ArrowRight") brkKeys.right = false;
   });
 
   // ---------- Init ----------
