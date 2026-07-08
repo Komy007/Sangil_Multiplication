@@ -94,6 +94,7 @@
     display:flex; align-items:flex-start; justify-content:center; gap:16px;
     font-family:"Courier New", monospace; font-weight:800; margin:20px 0 10px;
   }
+  .ldLeft{display:flex; flex-direction:column; align-items:flex-end;}
   .ldDividend{font-size:3rem; padding-right:16px; border-right:4px solid #fff; min-width:1.4em; text-align:right;}
   .ldRight{display:flex; flex-direction:column; align-items:center; min-width:70px;}
   .ldDivisor{font-size:3rem;}
@@ -219,6 +220,7 @@
     .heatcell{font-size:.5rem;}
     h1{font-size:1.2rem;}
     .ldDividend, .ldDivisor, .ldQuotient{font-size:2.2rem;}
+    .workRow{font-size:1.3rem;}
     .tfBtn{font-size:1.5rem; padding:18px 0;}
   }
 
@@ -282,10 +284,11 @@
   .dgt-used{color:#8a8dc0; text-decoration:line-through;}
   .dgt-active{color:var(--yellow); background:rgba(255,209,102,.15); border-radius:6px;}
   .workRow{
-    font-family:"Courier New", monospace; font-size:1.05rem; font-weight:700;
-    color:var(--accent2); margin-top:14px; min-height:1.4em;
+    font-family:"Courier New", monospace; font-size:1.7rem; font-weight:800;
+    color:var(--text); margin-top:2px; min-height:1.4em; text-align:right;
+    padding-right:16px; border-right:4px solid transparent;
   }
-  .stairRow{line-height:1.6;}
+  .stairRow{line-height:1.5;}
   .stairSubtract{color:var(--yellow);}
   .divPrompt{font-size:.95rem; font-weight:600; opacity:.9; margin-top:6px; min-height:1.3em;}
 </style>
@@ -414,7 +417,10 @@
       </div>
       <div class="questionCard" id="divQuestionCard">
         <div class="longDiv">
-          <div class="ldDividend" id="ldDividend">56</div>
+          <div class="ldLeft">
+            <div class="ldDividend" id="ldDividend">56</div>
+            <div class="workRow" id="divWorkRow">&nbsp;</div>
+          </div>
           <div class="ldRight">
             <div class="ldDivisor" id="ldDivisor">8</div>
             <div class="ldLine"></div>
@@ -424,7 +430,6 @@
           </div>
         </div>
         <div class="divPrompt" id="divPrompt">&nbsp;</div>
-        <div class="workRow" id="divWorkRow">&nbsp;</div>
         <div class="feedbackText" id="divFeedbackText">&nbsp;</div>
       </div>
       <div class="keypad" id="divKeypad">

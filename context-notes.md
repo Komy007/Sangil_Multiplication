@@ -57,3 +57,10 @@
 - **실제로 잡은 버그.** 처음 만든 버전은 `qWrongThisAttempt`(이 시도에서 힌트를 한 번이라도 봤는지)를 "2회 오답 후 정답 공개" 분기에서만 true로 설정했음. 그런데 "1회 오답 → 힌트 → 재시도로 정답" 케이스에서는 절대 true가 안 되어서, 힌트를 보고 맞춘 문제도 "완벽"으로 처리되어 스트릭이 안 끊기는 버그가 있었음. `window.__divDebug`/`window.__divDebugLog`를 임시로 심어서 클릭 타이밍과 내부 상태(qMicroAttempt/qStepIndex/accumulated 등)를 정확히 추적한 뒤 원인을 특정 — `divHandleQuotientStepWrong` 함수 맨 위에서 무조건 `qWrongThisAttempt = true`로 설정하도록 수정(오답이 호출됐다는 것 자체가 이미 "완벽하지 않음"을 의미하므로). 원래 앱(가이드 이전 버전)의 "몫을 한 번에 잘못 입력하면 attemptNum=1 실패로 스트릭 초기화" 의미와 정확히 일치시킴. 수정 후 "1회 오답→재시도 정답"은 Passed는 되지만 스트릭 0으로 처리되고, 문제 전체가 attempt 2로 리셋되어 처음부터 다시 풀어야 하는 것까지 실제 브라우저에서 재현·확인함.
 - **테스트 방법론 교훈.** 클릭+대기를 하나의 async eval 안에 넣으면 (원인 불명이지만) 실제 클릭이 씹히는 경우가 있었음. 디지트 클릭과 OK 클릭을 완전히 별개의 eval 호출로 분리하고, 각 호출 사이에 자연스러운 툴 왕복 지연(수 초)이 생기게 하는 방식이 훨씬 안정적이었음. 애매한 상태를 텍스트 UI만으로 추론하기 어려울 때는 임시로 `window.__debug`류 훅을 심어 내부 상태를 직접 읽는 것이 흑박 테스트보다 훨씬 빠르고 정확함 — 디버깅 끝나면 반드시 제거.
 - 디버그 훅(`window.__divDebug`, `window.__divDebugLog`) 전부 제거 완료, `node --check` 통과 확인.
+
+## 2026-07-08 나눗셈 레이아웃 수정 — 배당수 열에 계단식 풀이 직접 연결
+
+- **사용자 피드백.** 같은 교과서 사진을 다시 보내며 "지금은 밑으로(따로 떨어져서) 표현되어 아이들이 교과서와 다르게 생각한다"고 지적. 원인 확인: `#divWorkRow`(계단식)가 `.longDiv`(배당수|제수/몫 블록) 전체 아래에 별도 블록으로, 게다가 가운데 정렬로 떠 있어서 "437" 열과 안 이어져 보였음.
+- **수정.** `#ldDividend`와 `#divWorkRow`를 새 `.ldLeft`(`flex-direction:column; align-items:flex-end`) 컨테이너로 묶어서 `.longDiv` 안에 배치(오른쪽에는 기존 `.ldRight`가 divisor/quotient로 그대로). `.workRow`를 `text-align:right`로 바꾸고 `.ldDividend`와 동일한 `padding-right:16px`+투명 `border-right:4px`를 줘서 폭이 달라도 숫자 오른쪽 끝이 정확히 같은 x좌표에서 맞춰지도록 함.
+- **검증.** `getBoundingClientRect()`로 실측 — dividend.right(266.93px) === workRow.right(266.93px) 완전 일치, dividend.bottom과 workRow.top 사이 2px 간격으로 거의 붙어서 이어짐 확인. 스크린샷 도구가 이번 세션에서 반복적으로 타임아웃 났지만(피그마 렌더링 파이프라인 이슈로 추정, 콘솔 에러 없음, eval은 정상 응답) 실측 좌표로 대체 검증함.
+- **테스트 중 얻은 교훈 추가.** "15번 반복해서 2단계 문제 찾기" 같은 헬퍼 루프를 돌리면 그 자체가 `divStartBtn`을 여러 번 호출해 매번 `passedCount`를 0으로 리셋시킴 — 이후 "Passed 1/10"처럼 낮은 숫자가 나와도 버그가 아니라 테스트 루프의 부작용이니 혼동하지 말 것.
