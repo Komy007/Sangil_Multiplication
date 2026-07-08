@@ -1685,7 +1685,6 @@
       return;
     }
     divQuiz.attemptNum = 1;
-    divQuiz.stage = "quotient";
     divQuiz.inputStr = "";
     divQuiz.locked = false;
     var f = divCurrent();
@@ -1701,7 +1700,6 @@
 
     divQuiz.qSteps = computeDivisionSteps(f.dividend, f.divisor);
     divQuiz.qStepIndex = 0;
-    divQuiz.qSubStage = "digit";
     divQuiz.qWrongThisAttempt = false;
     divQuiz.qAccumulatedQuotient = "";
     divQuiz.qMicroAttempt = 1;
@@ -1732,20 +1730,16 @@
   // Renders the textbook-style long-division staircase into #divWorkRow:
   //   -product   (subtraction row for a completed step)
   //   nextNumber (next step's numberBefore, or the final remainderAfter if this was the last step)
-  // repeated for every fully-completed step, plus an in-progress "-product" row
-  // (with a live typed-answer preview) while the child is on the subtract sub-stage.
-  function divRenderStaircase(previewText){
+  // repeated for every fully-completed step. The child only enters quotient digits —
+  // the subtraction and bring-down for each step are revealed automatically once a
+  // digit is confirmed (see divSubmitQuotientStep), never typed by the child.
+  function divRenderStaircase(){
     var workEl = document.getElementById("divWorkRow");
     var lines = [];
     for(var i=0;i<divQuiz.qStepIndex;i++){
       lines.push({text: "− " + divQuiz.qSteps[i].product, sub:true});
       var nextVal = (i+1 < divQuiz.qSteps.length) ? divQuiz.qSteps[i+1].numberBefore : divQuiz.qSteps[i].remainderAfter;
       lines.push({text: String(nextVal)});
-    }
-    if(divQuiz.qStepIndex < divQuiz.qSteps.length && divQuiz.qSubStage === "subtract"){
-      var step = divQuiz.qSteps[divQuiz.qStepIndex];
-      lines.push({text: "− " + step.product, sub:true});
-      if(previewText !== undefined){ lines.push({text: previewText}); }
     }
     if(lines.length === 0){ workEl.innerHTML = "&nbsp;"; return; }
     workEl.innerHTML = lines.map(function(l){
@@ -1764,24 +1758,12 @@
     divRenderStaircase();
     if(divQuiz.qStepIndex >= divQuiz.qSteps.length) return;
     var step = divQuiz.qSteps[divQuiz.qStepIndex];
-    if(divQuiz.qSubStage === "digit"){
-      promptEl.textContent = "How many times does " + f.divisor + " go into " + step.numberBefore + "?";
-    } else {
-      promptEl.textContent = step.quotientDigit + " × " + f.divisor + " = " + step.product + ". Subtract it. What is left?";
-    }
+    promptEl.textContent = "How many times does " + f.divisor + " go into " + step.numberBefore + "?";
   }
 
   function divUpdateInputDisplay(){
-    if(divQuiz.stage === "remainder"){
-      document.getElementById("ldRVal").textContent = divQuiz.inputStr.length ? divQuiz.inputStr : "?";
-      return;
-    }
-    if(divQuiz.qSubStage === "digit"){
-      var shown = divQuiz.qAccumulatedQuotient + divQuiz.inputStr;
-      document.getElementById("ldQVal").textContent = shown.length ? shown : "?";
-    } else {
-      divRenderStaircase(divQuiz.inputStr.length ? divQuiz.inputStr : "?");
-    }
+    var shown = divQuiz.qAccumulatedQuotient + divQuiz.inputStr;
+    document.getElementById("ldQVal").textContent = shown.length ? shown : "?";
   }
 
   function divHandleKey(k){
@@ -1802,117 +1784,97 @@
   function divSubmit(){
     if(divQuiz.inputStr === "") return;
     var given = parseInt(divQuiz.inputStr, 10);
-
-    if(divQuiz.stage === "remainder"){
-      divProcessResult(given === divCurrent().remainder);
-      return;
-    }
-
     divSubmitQuotientStep(given);
   }
 
+  // The child only ever enters ONE thing: the next quotient digit. Once it's
+  // confirmed correct, the subtraction ("- product") and the bring-down of the
+  // next dividend digit happen automatically (divAdvanceStep) — matching the
+  // textbook worksheet where a learner writes 1, 4, 5 in turn and the "-3",
+  // "-12", "-15" rows fill themselves in as a consequence.
   function divSubmitQuotientStep(given){
     var step = divQuiz.qSteps[divQuiz.qStepIndex];
     var fbEl = document.getElementById("divFeedbackText");
-    if(divQuiz.qSubStage === "digit"){
-      if(given === step.quotientDigit){
-        playClickSound("ok");
-        fbEl.textContent = " ";
-        fbEl.className = "feedbackText";
-        divQuiz.qAccumulatedQuotient += String(step.quotientDigit);
-        divQuiz.qSubStage = "subtract";
-        divQuiz.inputStr = "";
-        divQuiz.qMicroAttempt = 1;
-        divRenderQuotientStepUI();
-      } else {
-        divHandleQuotientStepWrong(given, "digit");
-      }
-      return;
-    }
-
-    if(given === step.remainderAfter){
+    if(given === step.quotientDigit){
       playClickSound("ok");
       fbEl.textContent = " ";
       fbEl.className = "feedbackText";
-      divQuiz.qStepIndex++;
-      divQuiz.qSubStage = "digit";
+      divQuiz.qAccumulatedQuotient += String(step.quotientDigit);
+      document.getElementById("ldQVal").textContent = divQuiz.qAccumulatedQuotient;
       divQuiz.inputStr = "";
       divQuiz.qMicroAttempt = 1;
-      if(divQuiz.qStepIndex >= divQuiz.qSteps.length){
-        divFinishQuotientWalkthrough();
-      } else {
-        divRenderQuotientStepUI();
-      }
+      divQuiz.locked = true;
+      divAdvanceStep();
     } else {
-      divHandleQuotientStepWrong(given, "subtract");
+      divHandleQuotientStepWrong(given);
     }
   }
 
-  function divHandleQuotientStepWrong(given, kind){
+  // Auto-reveals the current step's subtraction + bring-down after a short pause,
+  // then (after another pause so the child can actually watch it happen) either
+  // prompts for the next quotient digit or finishes the walkthrough.
+  function divAdvanceStep(){
+    setTimeout(function(){
+      if(!divQuiz) return;
+      divQuiz.qStepIndex++;
+      divRenderStaircase();
+      setTimeout(function(){
+        if(!divQuiz) return;
+        if(divQuiz.qStepIndex >= divQuiz.qSteps.length){
+          divFinishQuotientWalkthrough();
+        } else {
+          divQuiz.locked = false;
+          divRenderQuotientStepUI();
+        }
+      }, 800);
+    }, 500);
+  }
+
+  function divHandleQuotientStepWrong(given){
     var f = divCurrent();
     var step = divQuiz.qSteps[divQuiz.qStepIndex];
     var fbEl = document.getElementById("divFeedbackText");
     document.getElementById("divQuestionCard").className = "questionCard shakeWrong";
     playWrongSound();
+    // Any wrong digit — even one the child self-corrects on retry — means this
+    // wasn't a clean first-try solve, so it can't count as a perfect attempt
+    // (mirrors the original single-shot quotient entry: one bad guess broke it).
+    divQuiz.qWrongThisAttempt = true;
 
     if(divQuiz.qMicroAttempt === 1){
       divQuiz.qMicroAttempt = 2;
       divQuiz.locked = true;
       divQuiz.inputStr = "";
-      var hint = kind === "digit"
-        ? "Think: what × " + f.divisor + " is closest to " + step.numberBefore + " without going over?"
-        : "Try the subtraction again!";
       fbEl.className = "feedbackText bad";
-      fbEl.textContent = "❌ " + hint;
+      fbEl.textContent = "❌ Think: what × " + f.divisor + " is closest to " + step.numberBefore + " without going over?";
       divUpdateInputDisplay();
       setTimeout(function(){ divQuiz.locked = false; }, 500);
       return;
     }
 
-    divQuiz.qWrongThisAttempt = true;
     divQuiz.qMicroAttempt = 1;
     divQuiz.locked = true;
     divQuiz.inputStr = "";
     fbEl.className = "feedbackText bad";
-    if(kind === "digit"){
-      fbEl.textContent = "The answer is " + step.quotientDigit + ".";
-      divQuiz.qAccumulatedQuotient += String(step.quotientDigit);
-      document.getElementById("ldQVal").textContent = divQuiz.qAccumulatedQuotient;
-      divQuiz.qSubStage = "subtract";
-      divRenderStaircase();
-    } else {
-      fbEl.textContent = "The answer is " + step.remainderAfter + ".";
-      divQuiz.qStepIndex++;
-      divQuiz.qSubStage = "digit";
-      divRenderStaircase();
-    }
+    fbEl.textContent = "The answer is " + step.quotientDigit + ".";
+    divQuiz.qAccumulatedQuotient += String(step.quotientDigit);
+    document.getElementById("ldQVal").textContent = divQuiz.qAccumulatedQuotient;
     setTimeout(function(){
+      if(!divQuiz) return;
       fbEl.textContent = " ";
       fbEl.className = "feedbackText";
-      divQuiz.locked = false;
-      if(divQuiz.qStepIndex >= divQuiz.qSteps.length){
-        divFinishQuotientWalkthrough();
-      } else {
-        divRenderQuotientStepUI();
-      }
+      divAdvanceStep();
     }, 1400);
   }
 
   function divFinishQuotientWalkthrough(){
-    if(divQuiz.level === 1){
-      divProcessResult(!divQuiz.qWrongThisAttempt);
-      return;
+    document.getElementById("ldQVal").className = "ldSlot";
+    if(divQuiz.level === 2){
+      var finalRemainder = divQuiz.qSteps[divQuiz.qSteps.length - 1].remainderAfter;
+      document.getElementById("ldRVal").textContent = finalRemainder;
+      document.getElementById("ldRVal").className = "ldSlot";
     }
-    if(!divQuiz.qWrongThisAttempt){
-      document.getElementById("ldQVal").textContent = divQuiz.qAccumulatedQuotient;
-      document.getElementById("ldQVal").className = "ldSlot";
-      document.getElementById("ldRVal").className = "ldSlot active";
-      divQuiz.stage = "remainder";
-      divQuiz.inputStr = "";
-      playClickSound("ok");
-    } else {
-      divProcessResult(false);
-    }
+    divProcessResult(!divQuiz.qWrongThisAttempt);
   }
 
   function divProcessResult(isCorrect){
@@ -1964,7 +1926,6 @@
 
     if(divQuiz.attemptNum === 1){
       divQuiz.attemptNum = 2;
-      divQuiz.stage = "quotient";
       divQuiz.inputStr = "";
       if(divQuiz.level === 2){
         document.getElementById("ldRVal").textContent = "?";
@@ -1972,7 +1933,6 @@
       }
       divQuiz.qSteps = computeDivisionSteps(f.dividend, f.divisor);
       divQuiz.qStepIndex = 0;
-      divQuiz.qSubStage = "digit";
       divQuiz.qWrongThisAttempt = false;
       divQuiz.qAccumulatedQuotient = "";
       divQuiz.qMicroAttempt = 1;
