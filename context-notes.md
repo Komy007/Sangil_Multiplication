@@ -64,3 +64,10 @@
 - **수정.** `#ldDividend`와 `#divWorkRow`를 새 `.ldLeft`(`flex-direction:column; align-items:flex-end`) 컨테이너로 묶어서 `.longDiv` 안에 배치(오른쪽에는 기존 `.ldRight`가 divisor/quotient로 그대로). `.workRow`를 `text-align:right`로 바꾸고 `.ldDividend`와 동일한 `padding-right:16px`+투명 `border-right:4px`를 줘서 폭이 달라도 숫자 오른쪽 끝이 정확히 같은 x좌표에서 맞춰지도록 함.
 - **검증.** `getBoundingClientRect()`로 실측 — dividend.right(266.93px) === workRow.right(266.93px) 완전 일치, dividend.bottom과 workRow.top 사이 2px 간격으로 거의 붙어서 이어짐 확인. 스크린샷 도구가 이번 세션에서 반복적으로 타임아웃 났지만(피그마 렌더링 파이프라인 이슈로 추정, 콘솔 에러 없음, eval은 정상 응답) 실측 좌표로 대체 검증함.
 - **테스트 중 얻은 교훈 추가.** "15번 반복해서 2단계 문제 찾기" 같은 헬퍼 루프를 돌리면 그 자체가 `divStartBtn`을 여러 번 호출해 매번 `passedCount`를 0으로 리셋시킴 — 이후 "Passed 1/10"처럼 낮은 숫자가 나와도 버그가 아니라 테스트 루프의 부작용이니 혼동하지 말 것.
+
+## 2026-07-08 나눗셈 세로 구분선 — 손그림 참고자료 반영
+
+- **사용자가 손으로 직접 그린 참고 이미지 제공.** 437÷3 예시를 단계별로 그려서, 몫 자릿수를 하나씩 넣을 때마다 오른쪽 세로 구분선("|")이 계단식 풀이 전체 높이만큼 아래로 계속 길어져야 한다는 것을 명확히 보여줌(1단계 완료 시 3줄 높이, 2단계 완료 시 5줄 높이까지 자람). 몫 숫자도 자릿수가 늘어날수록 "1" → "14"처럼 이어붙여서 표시.
+- **원인.** 직전 수정에서 세로 구분선을 `#ldDividend`(배당수 한 줄)에만 넣고 `#divWorkRow`(계단식)에는 투명 테두리로 폭만 맞춰놨었음 — 그래서 실제로는 선이 안 보이거나 배당수 옆에서만 짧게 끊겨 있었음.
+- **수정.** 테두리를 `#ldDividend`/`.workRow` 개별 요소가 아니라 이 둘을 감싸는 `.ldLeft` 컨테이너 자체에 `border-right:4px solid #fff; padding-right:16px`로 하나만 줌 — 컨테이너의 높이가 계단식이 늘어날수록 자연스럽게 커지므로 세로선도 함께 길어짐. `.ldRight`(제수/몫)는 그대로 상단 고정.
+- **검증.** `getBoundingClientRect()`로 `.ldLeft` 높이가 1단계 완료 전 94.7px → 1단계 완료 후 138.25px로 자라는 것, `.ldLeft.top === .ldRight.top`(둘 다 143.1px, 상단 정렬 유지)이면서 `.ldLeft.bottom(281.4) > .ldRight.bottom(271.4)`(왼쪽만 아래로 자람)인 것을 확인해 손그림 구조와 일치함을 확인.
