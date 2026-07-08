@@ -1,8 +1,22 @@
-# Learning Quest 컨텍스트 노트
+# Sangil's Times Table Quest 확장 컨텍스트 노트
 
 <!-- 작업 중 내린 결정과 그 이유를 기록. 다음 세션이 이어받을 때 참조. -->
 
-## 2026-07-08 초기 결정
+## 2026-07-08 방향 전환 (중요 — 반드시 읽을 것)
+
+- **이전 접근(Learning Quest 별도 앱)은 사용자 의도와 다름.** 사용자는 "기존 학습에 두 가지(영어·크메르어) 학습을 더하고 게임 1개를 추가"해 달라는 것이었지, 완전히 새로운 별도 앱을 원한 게 아니었음. 별도 앱 접근은 폐기.
+- **올바른 방향: 원래 앱(`gugudan.html`, 원래는 `index.html`)을 그대로 확장.** 프로필 시스템, 관리자 대시보드, Today's Missions 로켓, Mastery Map 히트맵 등 기존 구조는 전혀 건드리지 않고 그 위에 기능을 얹는다.
+- **기존 앱에 이미 보상 시스템이 있었다.** `renderResult(mode, score, total, missedList, level)` 함수가 만점 감지 → 컨페티/팡파르 → `getAndIncrementPerfectCount()`(오늘 날짜 기준 프로필별 만점 횟수) → `minutesForCount(n)`(1회=2분, 2회=3분, 3회 이상=5분) → `bonusBtn` 표시 → 클릭 시 `showScreen("gameselect")`로 테트리스/벽돌깨기 선택. 영어·크메르어도 이 시스템에 그대로 연결하면 되므로 별도 보상 로직을 새로 만들 필요가 없음.
+- **정답 소리 버그 원인.** `getCtx()`가 `audioCtx.resume()`을 호출만 하고 기다리지 않는 fire-and-forget 패턴. 컨텍스트가 "suspended" 상태로 시작하면(모바일 브라우저, 백그라운드 복귀 등) `resume()` 완료 전에 오실레이터가 `ctx.currentTime`(정지된 값) 기준으로 스케줄링되어 소리가 씹히거나 안 날 수 있음. 테스트 환경에서는 컨텍스트가 항상 "running"으로 시작해 재현은 못 했지만 코드상 명백한 레이스이므로 resume 완료를 기다리도록 수정하기로 함.
+- **테스트 중 발견한 별개 이슈: Playwright 합성 클릭이 이 앱의 `nameGoBtn`/`startTestBtn`에서 간헐적으로 씹힘(에러 없이 화면 전환 안 됨), JS `.click()` 직접 호출은 항상 정상 동작.** 실제 사용자의 진짜 클릭과는 무관한 프리뷰 툴/CDP 합성 클릭 특이 현상으로 판단(원인 미상, 낮은 우선순위). 이후 테스트는 `document.getElementById(...).click()` 직접 호출 방식으로 진행.
+- **범위 확정 (사용자 확인 완료).**
+  - 신규 게임 1개만 추가, 기존 테트리스/벽돌깨기는 무수정. 게임 선택은 Fable이 추천한 Word-Rocket Command로 확정(사용자 승인).
+  - 구구단·나눗셈도 이번 작업에 함께 개선(사용자: "개선하는 것이 좋지요"). 구구단은 basic 포맷에 한해 시각적 배열 힌트 토글 추가, 나눗셈은 기존 "몫+나머지 한번에 입력" 방식을 단계별 가이드 입력으로 교체(유럽식 표기 레이아웃은 이미 있던 것 유지).
+- **파일 구조.** `index.html`(Learning Quest 독립 앱)은 삭제하고, `gugudan.html`을 다시 `index.html`로 되돌려 그 안에서 기능을 추가. Learning Quest에서 이미 검수된 영어 Cloze/매칭 데이터와 크메르어 25단어 데이터는 재사용(내용 검수 다시 할 필요 없음).
+- **영어/크메르어를 보상 루프에 연결하는 방법.** 각 모듈의 세션 종료 시 `renderResult(mode, score, total, missedList, level)`을 `mode:"eng"`/`mode:"khmer"`로 호출 + `showScreen("result")`. `renderResult` 내부의 missedGrid 포맷팅과 `newTestBtn` 재시작 분기에 eng/khmer 케이스를 추가해야 함(기존엔 mult/div만 있었음). Today's Missions 로켓 카운터와 Mastery Map 히트맵은 곱셈 전용이므로 영어/크메르어는 연결하지 않음(범위 밖).
+- **신규 게임 구현 패턴.** `startTetris(seconds)`/`endTetris()`를 그대로 모방해 `startRocket(seconds)`/`endRocket()` 작성. `screen-gameselect`에 `chooseRocketBtn` 추가, `currentBonusMinutes*60`을 그대로 넘겨받아 동일한 타이머 구조 사용.
+
+## 2026-07-08 초기 결정 (폐기된 접근 — 참고용으로만 남김)
 
 - **별도 파일로 생성.** 기존 `index.html`(구구단 전용 앱)은 건드리지 않고 `learning-quest.html`을 신규 생성. 사용자가 기존 앱 대체를 원하면 나중에 교체하면 됨.
 - **역할 분담.** Fable이 설계·스펙·크메르어 데이터·검증을 담당, Sonnet 서브에이전트가 코딩 담당 (사용자 지시).
@@ -25,3 +39,13 @@
 - 사용자 요청("모든 게 같이 나와서 고를 수 있게 하나로 통일")에 따라 파일 교체. Learning Quest가 `index.html`(루트)이 되고, 기존 구구단 앱은 `gugudan.html`로 이름 변경해 보존. `learning-quest.html` 경로는 사라짐.
 - Learning Quest 대시보드 하단에 "Classic Gugudan App" 카드를 추가해 `gugudan.html`로 이동. 기존 앱 내부는 수정하지 않음(surgical change 원칙). 기존 앱에서 새 앱으로 돌아오려면 브라우저 뒤로가기 사용.
 - 두 앱의 localStorage 키가 다르므로(신규 `lq_state_v1`) 데이터 충돌 없음.
+
+## 2026-07-08 최종 구현 (gugudan.html 직접 확장 완료 → index.html로 교체)
+
+- **실제 구현 방식.** 별도 에이전트 위임 없이 이 세션에서 직접 `gugudan.html`을 읽고 surgical하게 확장. 파일이 CRLF였는데 Edit 도구로 새로 삽입한 블록이 LF로 들어가면서 혼합 줄바꿈이 생겨 이후 큰 블록의 `old_string` 매칭이 계속 실패하는 문제 발생 → `\r\n`을 전부 `\n`으로 정규화하는 1회성 node 스크립트로 해결한 뒤 이후 모든 edit이 정상 동작. 파일 줄바꿈은 이제 LF로 통일.
+- **나눗셈 가이드 입력.** `computeDivisionSteps(dividend, divisor)` 헬퍼로 자릿수별 (몫자리, 뺄셈결과) 스텝을 사전 계산. `divQuiz`에 `qSteps/qStepIndex/qSubStage('digit'|'subtract')/qWrongThisAttempt/qAccumulatedQuotient/qMicroAttempt` 필드를 추가해 기존 `stage`("quotient"/"remainder")/`attemptNum`/`divProcessResult`/`divOnCorrect`/`divOnWrong` 구조는 건드리지 않고 그 위에 얹음. 마이크로스텝(자릿수 하나, 뺄셈 하나)은 2회 오답까지 허용 후 정답 공개하고 계속 진행하되, `qWrongThisAttempt`가 true면 몫 전체 완료 시점에 기존 "틀린 몫 제출" 경로(`divProcessResult(false)`)를 그대로 호출해 스트릭 리셋·재시도 큐잉·2회째 완전 공개 로직을 원본 그대로 재사용.
+- **나눗셈 계단식(staircase) 표기 — 사용자가 보내준 캄보디아 교과서 사진에 맞춰 수정.** 처음엔 매 스텝마다 "숫자 − 곱 = ?" 한 줄만 보여주는 방식으로 짰으나, 실제 캄보디아식 필산 표기는 "−곱" 행과 "다음에 내려받은 숫자와 합쳐진 수"만 누적해서 보여주고 중간 나머지는 단독으로 표시하지 않음(마지막 스텝의 나머지만 예외). `divRenderStaircase(previewText)` 함수로 완료된 스텝들을 `qStepIndex` 기준 순회하며 `[-product, nextNumberBefore(or 마지막이면 remainderAfter)]` 쌍을 누적 렌더링하도록 교체. 437÷3 예시로 직접 트레이스 검증(-3, 13, -12, 17, -15, 2 → 몫145 나머지2) 완료.
+- **영어 레벨 상향.** 아이가 기존 Level 2(중급) 내용도 쉬워해서 전체를 한 단계씩 올림 — 구 Level 2 콘텐츠(ancient/enormous 등 매칭 + although/by the time 클로즈)가 새 Level 1("Intermediate")이 되고, 구 Level 1(기초) 콘텐츠는 완전히 폐기, 새 Level 2("Advanced")는 수동태·관계대명사·관용구 위주의 새 세트(exhausted/mysterious 매칭 등)로 교체. 레벨 토글 라벨도 "Basic/Intermediate" → "Intermediate/Advanced"로 변경.
+- **모바일 터치 타겟 감사.** 이번 세션에 신설한 `.chipBtn`/`.matchItem`/`.lessonCard`/`.listenBtn`/`.hintToggleBtn`에 `min-height`를 명시적으로 추가(46~48px)하고 `.chipBtn`/`.matchItem`은 `display:flex; align-items:center; justify-content:center;`로 내용 중앙 정렬. 로켓 게임 ◀▶ 버튼은 기존 `.tetrisControls`/`.key` 패턴을 그대로 재사용해 이미 60px 이상 확보되어 있음을 실측으로 확인(166.7×63.3px). 기존 Tetris/Breakout/프로필/관리자 화면은 손대지 않음.
+- **테스트 중 발견한 아티팩트(실제 버그 아님).** 여러 division/rocket 세션을 재시작 없이 연속으로 눌러가며 테스트하다가 한 번 "다른 문제로 순간이동", "로켓 화면이 갑자기 홈으로" 같은 비정상 상태를 목격했으나, 완전히 새로고침한 뒤 단일 eval 호출 안에서 `await wait()`로 타이밍을 명시적으로 통제해 재현했을 때는 100% 정상 동작함을 확인. 원인은 실제 게임 로직 버그가 아니라 브라우저 프리뷰 도구의 스크린샷 캐시 지연 + 내 테스트 스크립트가 여러 툴 라운드트립에 걸쳐 실행되며 실제 경과 시간을 과소평가한 데서 온 것으로 결론. 실제 사용자는 화면 전환 없이 새 게임을 재시작할 수 없으므로(버튼 클릭 흐름상 불가능) 이 클래스의 문제는 실사용에서 발생하지 않음.
+- **파일 교체 완료.** `index.html`(구 Learning Quest) 삭제 → `gugudan.html`을 `index.html`로 rename. 최종 산출물은 `D:\Sangil_Multiplication\index.html` 1개 파일(3124줄), `gugudan.html`은 더 이상 존재하지 않음. 임시 `_check.js`(node 문법 검증용) 삭제 완료.
