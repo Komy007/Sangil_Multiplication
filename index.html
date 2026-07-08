@@ -281,16 +281,21 @@
 
   /* ---- Guided division ---- */
   .dgt{padding:0 1px;}
-  .dgt-used{color:#8a8dc0; text-decoration:line-through;}
+  .dgt-used{color:#8a8dc0; text-decoration:line-through; position:relative;}
   .dgt-active{color:var(--yellow); background:rgba(255,209,102,.15); border-radius:6px; position:relative;}
-  .dgt-active::after{
+  /* Every digit that has already been brought down (past steps AND the
+     current one) keeps its dashed drop-arrow, so the whole worked example
+     stays visible at once, like the finished textbook page. */
+  .dgt-used::after, .dgt-active::after{
     content:""; position:absolute; top:100%; left:50%; margin-left:-1px;
     width:0; height:14px; border-left:2px dashed var(--accent2);
   }
-  .dgt-active::before{
+  .dgt-used::before, .dgt-active::before{
     content:"↓"; position:absolute; top:calc(100% + 10px); left:50%; transform:translateX(-50%);
     color:var(--accent2); font-size:.8rem; font-weight:900; line-height:1;
   }
+  .dgt-used::after{border-left-color:#5a5d8a;}
+  .dgt-used::before{color:#5a5d8a;}
   .workRow{
     font-family:"Courier New", monospace; font-size:1.7rem; font-weight:800;
     color:var(--text); margin-top:26px; min-height:1.4em; text-align:right;
