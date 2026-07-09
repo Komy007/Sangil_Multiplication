@@ -90,6 +90,7 @@
     padding:12px 6px; color:#fff; font-weight:700; cursor:pointer; text-align:center; font-size:.9rem;
   }
   .levelBtn.active{border-color:var(--accent2); background:linear-gradient(135deg, var(--accent2), var(--accent));}
+  #englishIntro .levelToggle .levelBtn{font-size:.8rem; padding:12px 4px;}
   .longDiv{
     display:flex; align-items:flex-start; justify-content:center; gap:16px;
     font-family:"Courier New", monospace; font-weight:800; margin:20px 0 10px;
@@ -474,6 +475,7 @@
         <div class="levelToggle">
           <button class="levelBtn active" id="engLevel1Btn">Level 1<br><span style="font-weight:400;font-size:.75rem;">Intermediate</span></button>
           <button class="levelBtn" id="engLevel2Btn">Level 2<br><span style="font-weight:400;font-size:.75rem;">Advanced</span></button>
+          <button class="levelBtn" id="engLevel3Btn">Level 3<br><span style="font-weight:400;font-size:.75rem;">Expert</span></button>
         </div>
       </div>
       <button class="bigBtn" id="engStartBtn">START ENGLISH 🚀</button>
@@ -2048,13 +2050,34 @@
    { word:"astonished", emoji:"😲", meaning:"very surprised" }
   ];
 
+  var ENG_L3_CLOZE = [
+   { sentence: "If I were you, I ___ apologize immediately.", options:["would","will","had"], answer:"would" },
+   { sentence: "The committee insisted that the report ___ be revised before Friday.", options:["should","shall","will"], answer:"should" },
+   { sentence: "Hardly ___ the ceremony begun when the storm hit.", options:["had","has","did"], answer:"had" },
+   { sentence: "The old house, dilapidated and abandoned, ___ a certain eerie charm.", options:["possessed","possesses","possessing"], answer:"possessed" },
+   { sentence: "It is essential that every student ___ present at the meeting.", options:["be","is","was"], answer:"be" },
+   { sentence: "After the long argument, they finally decided to ___ the hatchet and be friends again.", options:["bury","dig","throw"], answer:"bury" },
+   { sentence: "She was clearly ___ the fence about whether to accept the job offer.", options:["on","in","at"], answer:"on" },
+   { sentence: "The scandal ___ the company's reputation beyond repair.", options:["tarnished","polished","shined"], answer:"tarnished" },
+   { sentence: "Despite numerous setbacks, the team remained ___ optimistic about their chances.", options:["stubbornly","stubborn","stubbornness"], answer:"stubbornly" },
+   { sentence: "The professor's lecture was so ___ that half the class fell asleep.", options:["tedious","tediously","tedium"], answer:"tedious" }
+  ];
+  var ENG_L3_MATCH = [
+   { word:"meticulous", emoji:"🔍", meaning:"extremely careful and precise about details" },
+   { word:"ambiguous", emoji:"❓", meaning:"open to more than one interpretation" },
+   { word:"resilient", emoji:"💪", meaning:"able to recover quickly from difficulties" },
+   { word:"eloquent", emoji:"🗣️", meaning:"fluent and persuasive in speaking" },
+   { word:"skeptical", emoji:"🤨", meaning:"having doubts about something" },
+   { word:"versatile", emoji:"🔄", meaning:"able to adapt to many different situations" }
+  ];
+
   var engQuiz = null;
 
   function pickRandomN(arr, n){ return shuffle(arr.slice()).slice(0, n); }
 
   function startEnglishQuiz(level){
-    var clozePool = level === 1 ? ENG_L1_CLOZE : ENG_L2_CLOZE;
-    var matchPool = level === 1 ? ENG_L1_MATCH : ENG_L2_MATCH;
+    var clozePool = level === 1 ? ENG_L1_CLOZE : (level === 2 ? ENG_L2_CLOZE : ENG_L3_CLOZE);
+    var matchPool = level === 1 ? ENG_L1_MATCH : (level === 2 ? ENG_L2_MATCH : ENG_L3_MATCH);
     var clozeItems = pickRandomN(clozePool, 6).map(function(item){
       return { sentence: item.sentence, answer: item.answer, options: shuffle(item.options.slice()), hadMistake: false };
     });
@@ -2238,11 +2261,16 @@
   // ---------- Khmer practice ----------
   var KHMER_LESSONS = [
    { name: "Numbers", icon: "🔢", words: [
-    { km: "មួយ", rom: "muoy", en: "one", emoji: "1️⃣" },
-    { km: "ពីរ", rom: "pii", en: "two", emoji: "2️⃣" },
-    { km: "បី", rom: "bei", en: "three", emoji: "3️⃣" },
-    { km: "បួន", rom: "buon", en: "four", emoji: "4️⃣" },
-    { km: "ប្រាំ", rom: "pram", en: "five", emoji: "5️⃣" } ]},
+    { km: "មួយ", rom: "muoy", en: "one", emoji: "1️⃣", numeral: "១" },
+    { km: "ពីរ", rom: "pii", en: "two", emoji: "2️⃣", numeral: "២" },
+    { km: "បី", rom: "bei", en: "three", emoji: "3️⃣", numeral: "៣" },
+    { km: "បួន", rom: "buon", en: "four", emoji: "4️⃣", numeral: "៤" },
+    { km: "ប្រាំ", rom: "pram", en: "five", emoji: "5️⃣", numeral: "៥" },
+    { km: "ប្រាំមួយ", rom: "pram muoy", en: "six", emoji: "6️⃣", numeral: "៦" },
+    { km: "ប្រាំពីរ", rom: "pram pii", en: "seven", emoji: "7️⃣", numeral: "៧" },
+    { km: "ប្រាំបី", rom: "pram bei", en: "eight", emoji: "8️⃣", numeral: "៨" },
+    { km: "ប្រាំបួន", rom: "pram buon", en: "nine", emoji: "9️⃣", numeral: "៩" },
+    { km: "ដប់", rom: "dop", en: "ten", emoji: "🔟", numeral: "១០" } ]},
    { name: "Greetings", icon: "👋", words: [
     { km: "សួស្តី", rom: "suostei", en: "hello", emoji: "👋" },
     { km: "អរគុណ", rom: "arkun", en: "thank you", emoji: "🙏" },
@@ -2269,11 +2297,39 @@
     { km: "សាលា", rom: "saalaa", en: "school", emoji: "🏫" } ]}
   ];
 
+  var KHMER_ALPHABET = [
+   { letter: "ម", sound: "mâ", linkedWord: "មួយ", linkedRom: "muoy", linkedEn: "one", emoji: "1️⃣" },
+   { letter: "ព", sound: "pô", linkedWord: "ពីរ", linkedRom: "pii", linkedEn: "two", emoji: "2️⃣" },
+   { letter: "ប", sound: "bâ", linkedWord: "បី", linkedRom: "bei", linkedEn: "three", emoji: "3️⃣" },
+   { letter: "ស", sound: "sâ", linkedWord: "សួស្តី", linkedRom: "suostei", linkedEn: "hello", emoji: "👋" },
+   { letter: "អ", sound: "â", linkedWord: "អរគុណ", linkedRom: "arkun", linkedEn: "thank you", emoji: "🙏" },
+   { letter: "ទ", sound: "tô", linkedWord: "ទេ", linkedRom: "te", linkedEn: "no", emoji: "❌" },
+   { letter: "ល", sound: "lô", linkedWord: "លាហើយ", linkedRom: "lea haey", linkedEn: "goodbye", emoji: "🙋" },
+   { letter: "ឆ", sound: "chhâ", linkedWord: "ឆ្មា", linkedRom: "chhmaa", linkedEn: "cat", emoji: "🐱" },
+   { letter: "ត", sound: "tâ", linkedWord: "ត្រី", linkedRom: "trei", linkedEn: "fish", emoji: "🐟" },
+   { letter: "ដ", sound: "dâ", linkedWord: "ដំរី", linkedRom: "damrei", linkedEn: "elephant", emoji: "🐘" },
+   { letter: "ន", sound: "nô", linkedWord: "នំ", linkedRom: "num", linkedEn: "cake", emoji: "🍰" },
+   { letter: "គ", sound: "kô", linkedWord: "គ្រូ", linkedRom: "kruu", linkedEn: "teacher", emoji: "🧑‍🏫" }
+  ];
+  var KHMER_VOWEL_DEMO = {
+   consonant: "ក", consonantSound: "kâ",
+   vowelMark: "ា",
+   withVowel: "កា", withVowelSound: "kaa",
+   explanation: "Adding this mark (ា) after a letter makes the vowel sound longer."
+  };
+
   var khmerQuiz = null;
+  var khmerAlpha = null;
+  var khmerFlowMode = "word";
 
   function renderKhmerLessonList(){
     var list = document.getElementById("khmerLessonList");
     list.innerHTML = "";
+    var alphaCard = document.createElement("div");
+    alphaCard.className = "lessonCard";
+    alphaCard.innerHTML = '<span class="lessonIcon">🔤</span><span>Alphabet Basics</span>';
+    alphaCard.addEventListener("click", function(){ getCtx(); startKhmerAlphabet(); });
+    list.appendChild(alphaCard);
     KHMER_LESSONS.forEach(function(lesson, idx){
       var card = document.createElement("div");
       card.className = "lessonCard";
@@ -2284,6 +2340,7 @@
   }
 
   function startKhmerQuiz(lessonIdx){
+    khmerFlowMode = "word";
     var lesson = KHMER_LESSONS[lessonIdx];
     khmerQuiz = {
       lessonIdx: lessonIdx,
@@ -2317,8 +2374,10 @@
   function khmerRenderLearn(){
     var w = khmerQuiz.words[khmerQuiz.learnIndex];
     var fc = document.getElementById("khmerFlashcard");
+    var numeralHtml = w.numeral ? '<div class="khmer-text" style="font-size:1.6rem;font-weight:800;opacity:.85;">' + w.numeral + '</div>' : '';
     fc.innerHTML =
       '<div class="fcEmoji">' + w.emoji + '</div>' +
+      numeralHtml +
       '<div class="fcKm khmer-text">' + w.km + '</div>' +
       '<div class="fcRom">' + w.rom + '</div>' +
       '<div class="fcEn">' + w.en + '</div>';
@@ -2439,7 +2498,7 @@
   }
 
   function khmerUpdateTop(){
-    document.getElementById("khmerProgressLabel").textContent = "Passed " + khmerQuiz.quizIndex + " / 5";
+    document.getElementById("khmerProgressLabel").textContent = "Passed " + khmerQuiz.quizIndex + " / " + khmerQuiz.words.length;
     document.getElementById("khmerStreakLabel").textContent = "⭐ " + khmerQuiz.streak;
   }
 
@@ -2516,7 +2575,221 @@
 
   function khmerFinishSession(){
     lastKhmerLessonIdx = khmerQuiz.lessonIdx;
-    renderResult("khmer", khmerQuiz.correctFirstTry, 5, khmerQuiz.missedList, khmerQuiz.lessonIdx);
+    renderResult("khmer", khmerQuiz.correctFirstTry, khmerQuiz.words.length, khmerQuiz.missedList, khmerQuiz.lessonIdx);
+    showScreen("result");
+  }
+
+  // ---------- Khmer alphabet lesson ----------
+  function startKhmerAlphabet(){
+    khmerFlowMode = "alphabet";
+    khmerAlpha = {
+      learnIndex: 0,
+      correctFirstTry: 0,
+      missedList: [],
+      streak: 0,
+      locked: false
+    };
+    document.getElementById("khmerLessonSelect").style.display = "none";
+    document.getElementById("khmerLessonFlow").style.display = "block";
+    showScreen("khmer");
+    khmerShowStep("learn");
+    khmerRenderAlphaLearn();
+  }
+
+  function khmerRenderAlphaLearn(){
+    var i = khmerAlpha.learnIndex;
+    var fc = document.getElementById("khmerFlashcard");
+    if(i < KHMER_ALPHABET.length){
+      var a = KHMER_ALPHABET[i];
+      fc.innerHTML =
+        '<div class="fcKm khmer-text" style="font-size:3.4rem;">' + a.letter + '</div>' +
+        '<div class="fcRom">' + a.sound + '</div>' +
+        '<div style="margin-top:14px; font-size:.85rem; opacity:.8;">This is the first letter of...</div>' +
+        '<div class="fcEmoji">' + a.emoji + '</div>' +
+        '<div class="fcKm khmer-text">' + a.linkedWord + '</div>' +
+        '<div class="fcRom">' + a.linkedRom + '</div>' +
+        '<div class="fcEn">' + a.linkedEn + '</div>';
+    } else {
+      var d = KHMER_VOWEL_DEMO;
+      fc.innerHTML =
+        '<div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;">' +
+          '<div><div class="fcKm khmer-text">' + d.consonant + '</div><div class="fcRom">' + d.consonantSound + '</div></div>' +
+          '<div style="font-size:1.6rem; font-weight:800;">+</div>' +
+          '<div><div class="fcKm khmer-text">' + d.vowelMark + '</div></div>' +
+          '<div style="font-size:1.6rem; font-weight:800;">=</div>' +
+          '<div><div class="fcKm khmer-text">' + d.withVowel + '</div><div class="fcRom">' + d.withVowelSound + '</div></div>' +
+        '</div>' +
+        '<div class="fcEn" style="margin-top:14px; font-size:.9rem; font-weight:400;">' + d.explanation + '</div>';
+    }
+    document.getElementById("khmerLearnNextBtn").textContent =
+      (i < KHMER_ALPHABET.length) ? "Next ▶" : "Start Matching ▶";
+  }
+
+  function khmerAlphaSpeak(){
+    var i = khmerAlpha.learnIndex;
+    if(i < KHMER_ALPHABET.length){
+      var a = KHMER_ALPHABET[i];
+      khmerSpeakWord({en: a.linkedEn, km: a.linkedWord});
+    } else {
+      khmerSpeakWord({en: KHMER_VOWEL_DEMO.explanation, km: KHMER_VOWEL_DEMO.withVowel});
+    }
+  }
+
+  function khmerAlphaStartMatch(){
+    khmerShowStep("match");
+    khmerAlpha.matchState = KHMER_ALPHABET.map(function(a, idx){
+      return {idx:idx, letter:a.letter, emoji:a.emoji, linkedEn:a.linkedEn, matched:false};
+    });
+    khmerAlpha.selectedLeft = null;
+    khmerAlpha.selectedRight = null;
+    khmerAlpha.wrongFlashLeft = null;
+    khmerAlpha.wrongFlashRight = null;
+    khmerAlpha.locked = false;
+    khmerAlpha.leftOrder = shuffle(khmerAlpha.matchState.map(function(m){ return m.idx; }));
+    khmerAlpha.rightOrder = shuffle(khmerAlpha.matchState.map(function(m){ return m.idx; }));
+    khmerRenderAlphaMatch();
+  }
+
+  function khmerRenderAlphaMatch(){
+    var mg = document.getElementById("khmerMatchGrid");
+    mg.innerHTML = "";
+    var leftCol = document.createElement("div"); leftCol.className = "matchCol";
+    var rightCol = document.createElement("div"); rightCol.className = "matchCol";
+    khmerAlpha.leftOrder.forEach(function(idx){
+      var m = khmerAlpha.matchState[idx];
+      var el = document.createElement("div");
+      var cls = "matchItem";
+      if(m.matched) cls += " correctMatch";
+      else if(khmerAlpha.wrongFlashLeft === idx) cls += " wrongMatch";
+      else if(khmerAlpha.selectedLeft === idx) cls += " selected";
+      el.className = cls;
+      el.innerHTML = '<span class="khmer-text" style="font-size:1.5rem;">' + m.letter + '</span>';
+      if(!m.matched){ el.addEventListener("click", function(){ khmerAlphaMatchSelect("left", idx); }); }
+      leftCol.appendChild(el);
+    });
+    khmerAlpha.rightOrder.forEach(function(idx){
+      var m = khmerAlpha.matchState[idx];
+      var el = document.createElement("div");
+      var cls = "matchItem";
+      if(m.matched) cls += " correctMatch";
+      else if(khmerAlpha.wrongFlashRight === idx) cls += " wrongMatch";
+      else if(khmerAlpha.selectedRight === idx) cls += " selected";
+      el.className = cls;
+      el.textContent = m.emoji + " " + m.linkedEn;
+      if(!m.matched){ el.addEventListener("click", function(){ khmerAlphaMatchSelect("right", idx); }); }
+      rightCol.appendChild(el);
+    });
+    mg.appendChild(leftCol);
+    mg.appendChild(rightCol);
+  }
+
+  function khmerAlphaMatchSelect(side, idx){
+    if(khmerAlpha.locked) return;
+    if(khmerAlpha.matchState[idx].matched) return;
+    if(side === "left") khmerAlpha.selectedLeft = idx; else khmerAlpha.selectedRight = idx;
+    khmerRenderAlphaMatch();
+    if(khmerAlpha.selectedLeft === null || khmerAlpha.selectedRight === null) return;
+    var li = khmerAlpha.selectedLeft, ri = khmerAlpha.selectedRight;
+    if(li === ri){
+      playCorrectSound();
+      khmerAlpha.matchState[li].matched = true;
+      khmerAlpha.selectedLeft = null;
+      khmerAlpha.selectedRight = null;
+      khmerRenderAlphaMatch();
+      if(khmerAlpha.matchState.every(function(m){ return m.matched; })){
+        setTimeout(function(){ khmerAlphaStartQuizStage(); }, 600);
+      }
+    } else {
+      playWrongSound();
+      khmerAlpha.locked = true;
+      khmerAlpha.wrongFlashLeft = li;
+      khmerAlpha.wrongFlashRight = ri;
+      khmerAlpha.selectedLeft = null;
+      khmerAlpha.selectedRight = null;
+      khmerRenderAlphaMatch();
+      setTimeout(function(){
+        khmerAlpha.wrongFlashLeft = null;
+        khmerAlpha.wrongFlashRight = null;
+        khmerAlpha.locked = false;
+        khmerRenderAlphaMatch();
+      }, 700);
+    }
+  }
+
+  function khmerAlphaStartQuizStage(){
+    khmerShowStep("quiz");
+    khmerAlpha.quizIndex = 0;
+    khmerAlpha.quizItems = shuffle(KHMER_ALPHABET.slice()).slice(0, 8);
+    khmerAlpha.locked = false;
+    khmerRenderAlphaQuizQuestion();
+  }
+
+  function khmerAlphaUpdateTop(){
+    document.getElementById("khmerProgressLabel").textContent = "Passed " + khmerAlpha.quizIndex + " / " + khmerAlpha.quizItems.length;
+    document.getElementById("khmerStreakLabel").textContent = "⭐ " + khmerAlpha.streak;
+  }
+
+  function khmerRenderAlphaQuizQuestion(){
+    khmerAlpha.locked = false;
+    var item = khmerAlpha.quizItems[khmerAlpha.quizIndex];
+    var bodyEl = document.getElementById("khmerQuestionBody");
+    document.getElementById("khmerFeedbackText").textContent = " ";
+    document.getElementById("khmerFeedbackText").className = "feedbackText";
+    document.getElementById("khmerQuestionCard").className = "questionCard";
+    var others = KHMER_ALPHABET.filter(function(a){ return a !== item; });
+    var distractors = shuffle(others.slice()).slice(0, 3);
+    var choices = shuffle(distractors.concat([item]));
+    var optsRow = document.getElementById("khmerQuizOptions");
+    optsRow.innerHTML = "";
+
+    bodyEl.innerHTML = '<div class="khmer-text" style="font-size:2rem;font-weight:800;">' + item.letter + '</div>' +
+      '<div style="font-style:italic;opacity:.75;">' + item.sound + '</div>';
+    choices.forEach(function(a){
+      var btn = document.createElement("button");
+      btn.className = "chipBtn";
+      btn.textContent = a.emoji + " " + a.linkedEn;
+      btn.addEventListener("click", function(){ khmerAlphaQuizAnswer(a === item, btn); });
+      optsRow.appendChild(btn);
+    });
+    khmerAlphaUpdateTop();
+  }
+
+  function khmerAlphaQuizAnswer(isCorrect, btnEl){
+    if(khmerAlpha.locked) return;
+    khmerAlpha.locked = true;
+    var item = khmerAlpha.quizItems[khmerAlpha.quizIndex];
+    var fbEl = document.getElementById("khmerFeedbackText");
+    if(isCorrect){
+      playCorrectSound();
+      btnEl.className = "chipBtn correct";
+      khmerAlpha.streak++;
+      khmerAlpha.correctFirstTry++;
+      fbEl.className = "feedbackText good";
+      fbEl.textContent = "⭐ Great!";
+      setTimeout(function(){ khmerAlphaAdvanceQuiz(); }, 800);
+    } else {
+      playWrongSound();
+      btnEl.className = "chipBtn wrong";
+      document.getElementById("khmerQuestionCard").className = "questionCard shakeWrong";
+      khmerAlpha.streak = 0;
+      khmerAlpha.missedList.push({km:item.letter, en:item.linkedEn});
+      fbEl.className = "feedbackText bad";
+      fbEl.textContent = "The answer is " + item.linkedEn + ".";
+      setTimeout(function(){ khmerAlpha.locked = false; khmerAlphaAdvanceQuiz(); }, 1500);
+    }
+  }
+
+  function khmerAlphaAdvanceQuiz(){
+    khmerAlpha.quizIndex++;
+    if(khmerAlpha.quizIndex >= khmerAlpha.quizItems.length){
+      khmerAlphaFinishSession();
+    } else {
+      khmerRenderAlphaQuizQuestion();
+    }
+  }
+
+  function khmerAlphaFinishSession(){
+    renderResult("khmer", khmerAlpha.correctFirstTry, khmerAlpha.quizItems.length, khmerAlpha.missedList, "alphabet");
     showScreen("result");
   }
 
@@ -2838,7 +3111,11 @@
     } else if(lastResultMode === "eng"){
       startEnglishQuiz(lastEngLevel);
     } else if(lastResultMode === "khmer"){
-      startKhmerQuiz(lastKhmerLessonIdx);
+      if(lastResultLevel === "alphabet"){
+        startKhmerAlphabet();
+      } else {
+        startKhmerQuiz(lastKhmerLessonIdx);
+      }
     } else {
       startQuiz(pickTestFacts(20), false);
     }
@@ -2888,6 +3165,7 @@
     engLevelSelected = 1;
     document.getElementById("engLevel1Btn").className = "levelBtn active";
     document.getElementById("engLevel2Btn").className = "levelBtn";
+    document.getElementById("engLevel3Btn").className = "levelBtn";
     document.getElementById("englishIntro").style.display = "block";
     document.getElementById("englishQuiz").style.display = "none";
     showScreen("english");
@@ -2900,11 +3178,19 @@
     engLevelSelected = 1;
     document.getElementById("engLevel1Btn").className = "levelBtn active";
     document.getElementById("engLevel2Btn").className = "levelBtn";
+    document.getElementById("engLevel3Btn").className = "levelBtn";
   });
   document.getElementById("engLevel2Btn").addEventListener("click", function(){
     engLevelSelected = 2;
     document.getElementById("engLevel2Btn").className = "levelBtn active";
     document.getElementById("engLevel1Btn").className = "levelBtn";
+    document.getElementById("engLevel3Btn").className = "levelBtn";
+  });
+  document.getElementById("engLevel3Btn").addEventListener("click", function(){
+    engLevelSelected = 3;
+    document.getElementById("engLevel3Btn").className = "levelBtn active";
+    document.getElementById("engLevel1Btn").className = "levelBtn";
+    document.getElementById("engLevel2Btn").className = "levelBtn";
   });
   document.getElementById("engStartBtn").addEventListener("click", function(){
     getCtx();
@@ -2922,6 +3208,16 @@
     renderHome();
   });
   document.getElementById("khmerLearnNextBtn").addEventListener("click", function(){
+    if(khmerFlowMode === "alphabet"){
+      if(!khmerAlpha) return;
+      khmerAlpha.learnIndex++;
+      if(khmerAlpha.learnIndex >= KHMER_ALPHABET.length + 1){
+        khmerAlphaStartMatch();
+      } else {
+        khmerRenderAlphaLearn();
+      }
+      return;
+    }
     if(!khmerQuiz) return;
     khmerQuiz.learnIndex++;
     if(khmerQuiz.learnIndex >= khmerQuiz.words.length){
@@ -2931,6 +3227,11 @@
     }
   });
   document.getElementById("khmerListenBtn").addEventListener("click", function(){
+    if(khmerFlowMode === "alphabet"){
+      if(!khmerAlpha) return;
+      khmerAlphaSpeak();
+      return;
+    }
     if(!khmerQuiz) return;
     khmerSpeakWord(khmerQuiz.words[khmerQuiz.learnIndex]);
   });
