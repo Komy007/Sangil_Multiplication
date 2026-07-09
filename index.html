@@ -1652,16 +1652,19 @@
     return shuffle(selected);
   }
 
+  // Level 2 mixes 2-digit and 3-digit dividends (roughly half each) so problems
+  // like 345÷4 (quotient 86, remainder 1) show up alongside the simpler 2-digit ones.
   function genDivFactsL2(n){
     var list = [];
     for(var i=0;i<n;i++){
       var divisor, quotient, remainder, dividend;
+      var wantsThreeDigit = Math.random() < 0.5;
       do {
         divisor = 2 + Math.floor(Math.random()*8);
-        quotient = 2 + Math.floor(Math.random()*11);
+        quotient = wantsThreeDigit ? (12 + Math.floor(Math.random()*88)) : (2 + Math.floor(Math.random()*11));
         remainder = 1 + Math.floor(Math.random()*(divisor-1));
         dividend = divisor*quotient + remainder;
-      } while(dividend < 10 || dividend > 99);
+      } while(dividend < 10 || dividend > 999 || (wantsThreeDigit ? dividend < 100 : dividend > 99));
       list.push({divisor:divisor, quotient:quotient, remainder:remainder, dividend:dividend});
     }
     return list;
