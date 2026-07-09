@@ -95,7 +95,7 @@
     display:flex; align-items:flex-start; justify-content:center; gap:16px;
     font-family:"Courier New", monospace; font-weight:800; margin:20px 0 10px;
   }
-  .ldLeft{display:flex; flex-direction:column; align-items:flex-end; border-right:4px solid #fff; padding-right:16px;}
+  .ldLeft{display:flex; flex-direction:column; align-items:flex-end; border-right:4px solid #fff; padding-right:16px; position:relative;}
   .ldDividend{font-size:3rem; min-width:1.4em; text-align:right;}
   .ldRight{display:flex; flex-direction:column; align-items:center; min-width:70px;}
   .ldDivisor{font-size:3rem;}
@@ -284,19 +284,7 @@
   .dgt{padding:0 1px;}
   .dgt-used{color:#8a8dc0; text-decoration:line-through; position:relative;}
   .dgt-active{color:var(--yellow); background:rgba(255,209,102,.15); border-radius:6px; position:relative;}
-  /* Every digit that has already been brought down (past steps AND the
-     current one) keeps its dashed drop-arrow, so the whole worked example
-     stays visible at once, like the finished textbook page. */
-  .dgt-used::after, .dgt-active::after{
-    content:""; position:absolute; top:100%; left:50%; margin-left:-1px;
-    width:0; height:14px; border-left:2px dashed var(--accent2);
-  }
-  .dgt-used::before, .dgt-active::before{
-    content:"↓"; position:absolute; top:calc(100% + 10px); left:50%; transform:translateX(-50%);
-    color:var(--accent2); font-size:.8rem; font-weight:900; line-height:1;
-  }
-  .dgt-used::after{border-left-color:#5a5d8a;}
-  .dgt-used::before{color:#5a5d8a;}
+  #divBringDownSvg{position:absolute; inset:0; pointer-events:none; overflow:visible;}
   .workRow{
     font-family:"Courier New", monospace; font-size:1.7rem; font-weight:800;
     color:var(--text); margin-top:26px; min-height:1.4em; text-align:right;
@@ -433,6 +421,7 @@
           <div class="ldLeft">
             <div class="ldDividend" id="ldDividend">56</div>
             <div class="workRow" id="divWorkRow">&nbsp;</div>
+            <svg id="divBringDownSvg"></svg>
           </div>
           <div class="ldRight">
             <div class="ldDivisor" id="ldDivisor">8</div>
@@ -1739,6 +1728,13 @@
     container.innerHTML = "";
     var f = divCurrent();
     var digitsStr = String(f.dividend);
+    // Tag each digit with which qSteps[] index "brought it down" so the
+    // connecting arrow (divRenderBringDownArrows) can find, for any given
+    // digit, exactly which staircase row it feeds into.
+    var stepOfDigit = [];
+    divQuiz.qSteps.forEach(function(step, stepIdx){
+      step.broughtDigits.forEach(function(){ stepOfDigit.push(stepIdx); });
+    });
     var usedCount = 0;
     for(var i=0;i<divQuiz.qStepIndex;i++){ usedCount += divQuiz.qSteps[i].broughtDigits.length; }
     var activeCount = divQuiz.qStepIndex < divQuiz.qSteps.length ? divQuiz.qSteps[divQuiz.qStepIndex].broughtDigits.length : 0;
@@ -1747,6 +1743,7 @@
       span.className = "dgt";
       if(i < usedCount) span.className += " dgt-used";
       else if(i < usedCount+activeCount) span.className += " dgt-active";
+      if(stepOfDigit[i] !== undefined) span.setAttribute("data-step", stepOfDigit[i]);
       span.textContent = digitsStr[i];
       container.appendChild(span);
     }
@@ -1805,9 +1802,54 @@
     qEl.textContent = accumulated.length ? accumulated : "?";
     qEl.className = "ldSlot active";
     divRenderStaircase();
+    divRenderBringDownArrows();
     if(divQuiz.qStepIndex >= divQuiz.qSteps.length) return;
     var step = divQuiz.qSteps[divQuiz.qStepIndex];
     promptEl.textContent = "How many times does " + f.divisor + " go into " + step.numberBefore + "?";
+  }
+
+  // Draws a dashed connector from each brought-down digit group (in the
+  // dividend) down to the specific staircase row it feeds into, so the line
+  // actually touches both ends instead of hanging in a fixed spot while the
+  // column-aligned number below it sits somewhere else.
+  function divRenderBringDownArrows(){
+    var svg = document.getElementById("divBringDownSvg");
+    var leftEl = document.querySelector(".ldLeft");
+    if(!svg || !leftEl) return;
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    var leftBox = leftEl.getBoundingClientRect();
+    svg.setAttribute("width", leftBox.width);
+    svg.setAttribute("height", leftBox.height);
+
+    var groups = {};
+    document.querySelectorAll("#ldDividend .dgt[data-step]").forEach(function(span){
+      if(!/dgt-active|dgt-used/.test(span.className)) return;
+      var step = span.getAttribute("data-step");
+      (groups[step] = groups[step] || []).push(span);
+    });
+    var stairRows = document.querySelectorAll(".stairRow");
+    Object.keys(groups).forEach(function(stepIdx){
+      var spans = groups[stepIdx];
+      var firstBox = spans[0].getBoundingClientRect();
+      var lastBox = spans[spans.length - 1].getBoundingClientRect();
+      var startX = (firstBox.left + lastBox.right) / 2 - leftBox.left;
+      var startY = firstBox.bottom - leftBox.top;
+      // Row 2*i is that step's "− product" row — the direct result of
+      // bringing this digit down, so its right edge is the natural landing spot.
+      var targetRow = stairRows[parseInt(stepIdx, 10) * 2];
+      if(!targetRow) return;
+      var targetBox = targetRow.getBoundingClientRect();
+      var endX = targetBox.right - leftBox.left;
+      var endY = targetBox.top - leftBox.top;
+      var isUsed = spans[0].className.indexOf("dgt-used") !== -1;
+      var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", startX); line.setAttribute("y1", startY);
+      line.setAttribute("x2", endX); line.setAttribute("y2", endY);
+      line.setAttribute("stroke", isUsed ? "#5a5d8a" : "var(--accent2)");
+      line.setAttribute("stroke-width", "2");
+      line.setAttribute("stroke-dasharray", "3,3");
+      svg.appendChild(line);
+    });
   }
 
   function divUpdateInputDisplay(){
