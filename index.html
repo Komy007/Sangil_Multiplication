@@ -445,6 +445,7 @@
         <div class="divPrompt" id="divPrompt">&nbsp;</div>
         <div class="feedbackText" id="divFeedbackText">&nbsp;</div>
       </div>
+      <button class="bigBtn" id="divNextBtn" style="display:none;">Next Problem →</button>
       <div class="keypad" id="divKeypad">
         <button class="key" data-k="1">1</button>
         <button class="key" data-k="2">2</button>
@@ -1702,6 +1703,8 @@
   }
 
   function divNextQuestion(){
+    document.getElementById("divNextBtn").style.display = "none";
+    document.getElementById("divKeypad").style.display = "grid";
     if(!divQuiz.queue.length){
       endDivQuiz();
       return;
@@ -1755,17 +1758,41 @@
   // repeated for every fully-completed step. The child only enters quotient digits —
   // the subtraction and bring-down for each step are revealed automatically once a
   // digit is confirmed (see divSubmitQuotientStep), never typed by the child.
+  // Each row must land under the correct dividend digit column (not just
+  // right-flush against the dividend's own right edge) — e.g. for 437÷3 the
+  // "-3" row sits under the "4", "13" sits under "43", matching the textbook
+  // layout. A row whose rightmost digit belongs to column `endCol` (out of
+  // `dividendLength` total columns) gets pushed left by
+  // `(dividendLength - endCol)` character-widths from the shared right edge.
+  // Margins are computed in real pixels (measured from an actual rendered
+  // dividend digit) rather than "ch" units, because the staircase text is a
+  // different font-size than the dividend — "ch" is relative to the element's
+  // OWN font-size, so it would silently measure the wrong character width.
   function divRenderStaircase(){
+    var f = divCurrent();
+    var dividendLength = String(f.dividend).length;
     var workEl = document.getElementById("divWorkRow");
+    var firstDigit = document.querySelector("#ldDividend .dgt");
+    var charWidthPx = firstDigit ? firstDigit.getBoundingClientRect().width : 0;
     var lines = [];
+    var cumulative = 0;
+    var cumulativeByStep = divQuiz.qSteps.map(function(s){ cumulative += s.broughtDigits.length; return cumulative; });
     for(var i=0;i<divQuiz.qStepIndex;i++){
-      lines.push({text: "− " + divQuiz.qSteps[i].product, sub:true});
-      var nextVal = (i+1 < divQuiz.qSteps.length) ? divQuiz.qSteps[i+1].numberBefore : divQuiz.qSteps[i].remainderAfter;
-      lines.push({text: String(nextVal)});
+      var productMargin = (dividendLength - cumulativeByStep[i]) * charWidthPx;
+      lines.push({text: "− " + divQuiz.qSteps[i].product, sub:true, margin: productMargin});
+      var nextText, nextMargin;
+      if(i+1 < divQuiz.qSteps.length){
+        nextText = String(divQuiz.qSteps[i+1].numberBefore);
+        nextMargin = (dividendLength - cumulativeByStep[i+1]) * charWidthPx;
+      } else {
+        nextText = String(divQuiz.qSteps[i].remainderAfter);
+        nextMargin = productMargin;
+      }
+      lines.push({text: nextText, margin: nextMargin});
     }
     if(lines.length === 0){ workEl.innerHTML = "&nbsp;"; return; }
     workEl.innerHTML = lines.map(function(l){
-      return '<div class="stairRow' + (l.sub ? ' stairSubtract' : '') + '">' + l.text + '</div>';
+      return '<div class="stairRow' + (l.sub ? ' stairSubtract' : '') + '" style="margin-right:' + l.margin.toFixed(2) + 'px;">' + l.text + '</div>';
     }).join("");
   }
 
@@ -1936,7 +1963,12 @@
     divQuiz.passedCount++;
     divUpdateTop();
 
-    setTimeout(function(){ divNextQuestion(); }, 700);
+    // Wait for the child to actually see the praise message and tap through,
+    // instead of silently auto-advancing to the next problem.
+    document.getElementById("divKeypad").style.display = "none";
+    var nextBtn = document.getElementById("divNextBtn");
+    nextBtn.textContent = divQuiz.queue.length ? "Next Problem →" : "See Results →";
+    nextBtn.style.display = "block";
   }
 
   function divOnWrong(){
@@ -3249,6 +3281,10 @@
     getCtx();
     var facts = divLevelSelected === 1 ? genDivFactsL1(10) : genDivFactsL2(10);
     startDivQuiz(facts, divLevelSelected, false);
+  });
+  document.getElementById("divNextBtn").addEventListener("click", function(){
+    playClickSound("ok");
+    divNextQuestion();
   });
   document.getElementById("divKeypad").addEventListener("click", function(e){
     var btn = e.target.closest(".key");
