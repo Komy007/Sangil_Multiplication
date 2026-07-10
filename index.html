@@ -325,7 +325,7 @@
   .mmGrid{display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; max-width:340px; margin:0 auto;}
   .mmCard{
     aspect-ratio:1; border-radius:12px; background:var(--mint);
-    display:flex; align-items:center; justify-content:center; font-size:1.8rem;
+    display:flex; align-items:center; justify-content:center; font-size:clamp(2rem,9vw,2.8rem);
     cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.15); user-select:none;
   }
   .mmCard.faceUp{background:#fff; box-shadow:0 2px 0 rgba(0,0,0,.1);}
@@ -600,7 +600,7 @@
 
   <div id="screen-tetris">
     <div class="topbar">
-      <div style="width:44px;"></div>
+      <button class="muteBtn" id="tetrisExitBtn" title="Exit game">←</button>
       <h1>🎮 Bonus Tetris!</h1>
       <div style="width:44px;"></div>
     </div>
@@ -627,7 +627,7 @@
 
   <div id="screen-breakout">
     <div class="topbar">
-      <div style="width:44px;"></div>
+      <button class="muteBtn" id="brkExitBtn" title="Exit game">←</button>
       <h1>🎾 Bonus Brick Breaker!</h1>
       <div style="width:44px;"></div>
     </div>
@@ -652,7 +652,7 @@
 
   <div id="screen-rocket">
     <div class="topbar">
-      <div style="width:44px;"></div>
+      <button class="muteBtn" id="rocketExitBtn" title="Exit game">←</button>
       <h1>🚀 Bonus Word-Rocket!</h1>
       <div style="width:44px;"></div>
     </div>
@@ -677,7 +677,7 @@
 
   <div id="screen-memorymatch">
     <div class="topbar">
-      <div style="width:44px;"></div>
+      <button class="muteBtn" id="mmExitBtn" title="Exit game">←</button>
       <h1>🧠 Bonus Memory Match!</h1>
       <div style="width:44px;"></div>
     </div>
@@ -702,7 +702,7 @@
 
   <div id="screen-speedtap">
     <div class="topbar">
-      <div style="width:44px;"></div>
+      <button class="muteBtn" id="stExitBtn" title="Exit game">←</button>
       <h1>🎯 Bonus Speed Tap!</h1>
       <div style="width:44px;"></div>
     </div>
@@ -1319,6 +1319,12 @@
     document.getElementById("tetrisFinalScore").textContent = "Score: " + tetris.score;
     document.getElementById("tetrisOverOverlay").style.display = "flex";
     speak("Time's up! Great playing!");
+  }
+  // Leaving mid-game (not a timeout) — stop the loop/timer quietly and go
+  // back to the game-select screen, no "time's up" overlay/speech.
+  function exitTetris(){
+    if(tetris){ tetris.running = false; clearInterval(tetris.timerHandle); cancelAnimationFrame(tetris.rafHandle); }
+    showScreen("gameselect");
   }
 
   function startTetris(seconds){
@@ -3105,6 +3111,10 @@
     document.getElementById("brkOverOverlay").style.display = "flex";
     speak("Time's up! Great playing!");
   }
+  function exitBreakout(){
+    if(brk){ brk.running = false; clearInterval(brk.timerHandle); cancelAnimationFrame(brk.rafHandle); }
+    showScreen("gameselect");
+  }
 
   function startBreakout(seconds){
     brk = {
@@ -3253,6 +3263,10 @@
     document.getElementById("rocketOverOverlay").style.display = "flex";
     speak("Time's up! Great playing!");
   }
+  function exitRocket(){
+    if(rocket){ rocket.running = false; clearInterval(rocket.timerHandle); cancelAnimationFrame(rocket.rafHandle); }
+    showScreen("gameselect");
+  }
 
   function startRocket(seconds){
     rocket = {
@@ -3395,6 +3409,10 @@
     document.getElementById("mmOverOverlay").style.display = "flex";
     speak("Time's up! Great playing!");
   }
+  function exitMemoryMatch(){
+    if(mm){ mm.running = false; mm.locked = true; clearInterval(mm.timerHandle); }
+    showScreen("gameselect");
+  }
 
   function startMemoryMatch(seconds){
     mm = {
@@ -3478,6 +3496,15 @@
     document.getElementById("stPlayAgainBtn").style.display = st.outerSec > 0 ? "block" : "none";
     document.getElementById("stOverOverlay").style.display = "flex";
     speak("Round over!");
+  }
+  function exitSpeedTap(){
+    if(st){
+      st.running = false;
+      clearInterval(st.timerHandle);
+      var best = loadSTBestFor(activeProfile);
+      if(st.score > best) saveSTBestFor(activeProfile, st.score);
+    }
+    showScreen("gameselect");
   }
 
   function startSpeedTap(seconds){
@@ -3723,6 +3750,11 @@
     showScreen("home");
     renderHome();
   });
+  document.getElementById("tetrisExitBtn").addEventListener("click", exitTetris);
+  document.getElementById("brkExitBtn").addEventListener("click", exitBreakout);
+  document.getElementById("rocketExitBtn").addEventListener("click", exitRocket);
+  document.getElementById("mmExitBtn").addEventListener("click", exitMemoryMatch);
+  document.getElementById("stExitBtn").addEventListener("click", exitSpeedTap);
 
   document.getElementById("brkLeftBtn").addEventListener("mousedown", function(){ if(brk) brk.paddleDir = -1; });
   document.getElementById("brkLeftBtn").addEventListener("mouseup", function(){ if(brk) brk.paddleDir = 0; });
